@@ -204,6 +204,35 @@ def build_place(
     }
 
 
+def persist_clusters(
+    conn: sqlite3.Connection,
+    places: list[dict[str, Any]],
+    radius_km: int,
+) -> None:
+    """Write live discs so POST /api/price can load the clicked cluster_id."""
+    sql = (
+        "INSERT OR REPLACE INTO cluster("
+        "id, radius_km, hub_ids, title, center_lat, center_lon, diameter_km, ingredient_mask"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    for place in places:
+        hub_ids = [h["hub_id"] for h in place["hubs"]]
+        conn.execute(
+            sql,
+            (
+                place["cluster_id"],
+                int(radius_km),
+                json.dumps(hub_ids, ensure_ascii=False),
+                place.get("title") or "",
+                float(place["center"]["lat"]),
+                float(place["center"]["lon"]),
+                float(place.get("diameter_km") or 0.0),
+                json.dumps(place.get("coverage") or {}, ensure_ascii=True),
+            ),
+        )
+    conn.commit()
+
+
 def list_places(
     conn: sqlite3.Connection,
     ingredients: list[str],
@@ -218,5 +247,6 @@ def list_places(
         if place is not None:
             raw.append(place)
     ranked = rank_places(raw, ingredients, radius_km)
+    persist_clusters(conn, ranked, radius_km)
     cap = max(0, int(limit))
     return {"total_found": len(ranked), "places": ranked[:cap]}

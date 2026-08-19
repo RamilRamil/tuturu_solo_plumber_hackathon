@@ -1,5 +1,9 @@
 data/burger.db
 *.db
+*.db-shm
+*.db-wal
+data/backups/
+.worktrees/
 __pycache__/
 *.pyc
 .pytest_cache/

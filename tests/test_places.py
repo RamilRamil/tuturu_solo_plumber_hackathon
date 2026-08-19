@@ -170,6 +170,16 @@ class PlacesTests(unittest.TestCase):
         self.assertIsNotNone(boris)
         self.assertEqual(boris["hubs"][0]["probe_status"], "not_sellable")
 
+    def test_g10_persists_cluster_after_places(self) -> None:
+        etalon = _load_fixture("etalon_1.json")["cluster_id"]
+        self._post(ETALON_BURGER, radius_km=100, limit=20)
+        row = self.conn.execute(
+            "SELECT id, hub_ids FROM cluster WHERE id = ? LIMIT 1",
+            (etalon,),
+        ).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["id"], etalon)
+
     def test_places_module_has_no_network_imports(self) -> None:
         text = (ROOT / "backend" / "routers" / "places.py").read_text(encoding="utf-8")
         self.assertNotIn("tutu_mcp", text)

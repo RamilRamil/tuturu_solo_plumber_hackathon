@@ -4,9 +4,10 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      BURGER_DB: /app/data/burger.db
+      BURGER_DB: /app/data/burger.g10.db
+      BURGER_SEED_FIXTURES: "1"
     volumes:
-      - burger-data:/app/data
+      - ./data:/app/data
     expose:
       - "8000"
 
@@ -26,6 +27,3 @@ services:
     depends_on:
       - backend
       - frontend
-
-volumes:
-  burger-data:

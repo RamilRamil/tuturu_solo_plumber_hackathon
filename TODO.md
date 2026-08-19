@@ -1,5 +1,32 @@
 # TODO.md
 
+## Sprint 3h local MVP (2026-08-19)
+
+### [orchestrator-integrator]
+
+- [x] Checkpoint `f45ffdc` + SQLite backup `data/backups/burger.db.checkpoint-3h`
+- [ ] G10: Python 3.12, tests, Docker Compose through nginx
+- [ ] Persist live discs into `cluster` so `/api/price` finds clicked `cluster_id`
+- [ ] Sequential merge `codex/data`, `codex/price-live`, `codex/frontend-wow` into local `main`
+- [ ] Smoke, screenshots, README, final report
+- Do not push. Do not deploy VPS.
+
+### [codex-data]
+
+- [ ] D4 Wikidata then D5 cache warmup on worktree copy of burger.db (sole writer)
+- [ ] Honest `coverage.json` for useful CFD; NW only if time
+- [ ] Commit only small JSON/summaries; never PBF or SQLite
+
+### [codex-price-live]
+
+- [ ] Live Tutu best-effort; keep `fixture-confirmed` until proven
+- [ ] Guard, directed legs, return fallback, hotels stay_total, breakdown, checkout URL as-is
+- [ ] Reconstruct cluster from `cluster_id` if `cluster` table empty
+
+### [codex-frontend-wow]
+
+- [ ] Desktop-first UX; inversion; SSE; grey from routing results; almost-fits; coverage; share URL
+
 ## Readiness basket A
 
 ### [worker-a-ingest]
