@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ARG VITE_API_MODE_DEFAULT=live
+ENV VITE_API_MODE_DEFAULT=$VITE_API_MODE_DEFAULT
 RUN npm run build
 
 FROM nginx:1.27-alpine

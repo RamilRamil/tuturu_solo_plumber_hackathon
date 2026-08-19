@@ -163,3 +163,23 @@ export type IngredientGroup = {
   id: string;
   name_ru: string;
 };
+
+export type RoutingGreyCode =
+  | "no_route"
+  | "misresolved"
+  | "not_sellable"
+  | "missing_price";
+
+export type CardState = {
+  grey: boolean;
+  reason: string | null;
+  code: RoutingGreyCode | null;
+};
+
+export type CoveragePayload = {
+  loaded: string[];
+  admin_level_4: string[];
+  at: string | null;
+  note: string | null;
+  poi_count?: number;
+};

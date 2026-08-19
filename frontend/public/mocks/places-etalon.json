@@ -286,8 +286,8 @@
           "significance": 4,
           "wikidata": null,
           "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
-          "opening_hours": null,
-          "hours_status": "unknown"
+          "opening_hours": "Mo-Su 10:00-19:00",
+          "hours_status": "open"
         },
         {
           "id": "n-yar-industrial-museum-pair",
@@ -298,8 +298,8 @@
           "significance": 1,
           "wikidata": null,
           "start_date": null,
-          "opening_hours": null,
-          "hours_status": "unknown"
+          "opening_hours": "Tu-Su 10:00-18:00",
+          "hours_status": "closed"
         }
       ]
     },

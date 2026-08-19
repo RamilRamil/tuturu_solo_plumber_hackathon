@@ -9,6 +9,7 @@ type Props = {
   childrenAges: string;
   budgetScope: BudgetScope;
   busy: boolean;
+  onAbort: () => void;
   onOrigin: (value: string) => void;
   onDays: (value: number) => void;
   onMonth: (value: string) => void;
@@ -27,6 +28,7 @@ export function OriginForm({
   childrenAges,
   budgetScope,
   busy,
+  onAbort,
   onOrigin,
   onDays,
   onMonth,
@@ -88,6 +90,14 @@ export function OriginForm({
         </label>
         <button type="button" disabled={!enabled || busy} onClick={onSubmit}>
           {busy ? "стрим…" : "Запросить цены"}
+        </button>
+        <button
+          type="button"
+          className="abort"
+          disabled={!busy}
+          onClick={onAbort}
+        >
+          Прервать
         </button>
       </fieldset>
     </section>
