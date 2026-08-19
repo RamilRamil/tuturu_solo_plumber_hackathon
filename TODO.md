@@ -5,8 +5,8 @@
 ### [orchestrator-integrator]
 
 - [x] Checkpoint `f45ffdc` + SQLite backup `data/backups/burger.db.checkpoint-3h`
-- [ ] G10: Python 3.12, tests, Docker Compose through nginx
-- [ ] Persist live discs into `cluster` so `/api/price` finds clicked `cluster_id`
+- [x] G10: Python 3.12, tests, Docker Compose through nginx
+- [x] Persist live discs into `cluster` so `/api/price` finds clicked `cluster_id`
 - [ ] Sequential merge `codex/data`, `codex/price-live`, `codex/frontend-wow` into local `main`
 - [ ] Smoke, screenshots, README, final report
 - Do not push. Do not deploy VPS.
