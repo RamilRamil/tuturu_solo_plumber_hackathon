@@ -1,50 +1,50 @@
 {
-  "total_found": 12,
+  "total_found": 8,
   "places": [
     {
-      "cluster_id": "c:Ярославль|Ярославская область",
-      "title": "Ярославль",
+      "cluster_id": "c:Углич|Ярославская область",
+      "title": "Углич",
       "hubs": [
         {
-          "hub_id": "Ярославль|Ярославская область",
-          "name": "Ярославль",
+          "hub_id": "Углич|Ярославская область",
+          "name": "Углич",
           "region": "Ярославская область",
-          "lat": 57.61667,
-          "lon": 39.85,
-          "probe_status": "sellable"
+          "lat": 57.53333,
+          "lon": 38.33333,
+          "probe_status": "not_sellable"
         }
       ],
-      "center": { "lat": 57.61667, "lon": 39.85 },
-      "diameter_km": 12,
+      "center": { "lat": 57.53333, "lon": 38.33333 },
+      "diameter_km": 8,
       "coverage": {
         "matched": ["ancient_temple", "industrial_museum"],
         "missing": []
       },
-      "rarity": { "rank": 1, "total_places_with_combo": 7 },
+      "rarity": { "rank": 1, "total_places_with_combo": 5 },
       "objects": [
         {
-          "id": "n-yar-temple-1",
-          "name": "Успенский собор",
+          "id": "w-uglich-smolensk",
+          "name": "Смоленская церковь",
           "ingredient": "ancient_temple",
-          "lat": 57.626,
-          "lon": 39.887,
-          "significance": 4,
+          "lat": 57.5257593,
+          "lon": 38.3088354,
+          "significance": 5,
           "wikidata": null,
-          "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
+          "start_date": { "raw": "1674..1677", "from": 1674, "to": 1677 },
           "opening_hours": null,
           "hours_status": "unknown"
         },
         {
-          "id": "n-yar-industrial-museum",
-          "name": "Музей истории Ярославского завода",
+          "id": "n-uglich-syr-kult",
+          "name": "Сыр Культ Просвет",
           "ingredient": "industrial_museum",
-          "lat": 57.63,
-          "lon": 39.89,
-          "significance": 1,
+          "lat": 57.5477839,
+          "lon": 38.3366643,
+          "significance": 3,
           "wikidata": null,
           "start_date": null,
-          "opening_hours": null,
-          "hours_status": "unknown"
+          "opening_hours": "10:00-19:00",
+          "hours_status": "open"
         }
       ]
     },
@@ -67,7 +67,7 @@
         "matched": ["ancient_temple", "industrial_museum"],
         "missing": []
       },
-      "rarity": { "rank": 2, "total_places_with_combo": 7 },
+      "rarity": { "rank": 2, "total_places_with_combo": 5 },
       "objects": [
         {
           "id": "n-tver-temple",
@@ -114,7 +114,7 @@
         "matched": ["ancient_temple", "industrial_museum"],
         "missing": []
       },
-      "rarity": { "rank": 4, "total_places_with_combo": 7 },
+      "rarity": { "rank": 3, "total_places_with_combo": 5 },
       "objects": [
         {
           "id": "n-vlad-temple",
@@ -161,7 +161,7 @@
         "matched": ["ancient_temple", "industrial_museum"],
         "missing": []
       },
-      "rarity": { "rank": 5, "total_places_with_combo": 7 },
+      "rarity": { "rank": 4, "total_places_with_combo": 5 },
       "objects": [
         {
           "id": "n-suz-temple",
@@ -208,7 +208,7 @@
         "matched": ["ancient_temple", "industrial_museum"],
         "missing": []
       },
-      "rarity": { "rank": 6, "total_places_with_combo": 7 },
+      "rarity": { "rank": 5, "total_places_with_combo": 5 },
       "objects": [
         {
           "id": "n-tor-temple",
@@ -260,10 +260,10 @@
       "center": { "lat": 57.4, "lon": 39.63 },
       "diameter_km": 58,
       "coverage": {
-        "matched": ["ancient_temple", "industrial_museum"],
-        "missing": []
+        "matched": ["ancient_temple"],
+        "missing": ["industrial_museum"]
       },
-      "rarity": { "rank": 3, "total_places_with_combo": 7 },
+      "rarity": { "rank": 1, "total_places_with_combo": 3 },
       "objects": [
         {
           "id": "n-rostov-resurrection",
@@ -288,18 +288,41 @@
           "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
           "opening_hours": "Mo-Su 10:00-19:00",
           "hours_status": "open"
-        },
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Ярославль|Ярославская область",
+      "title": "Ярославль",
+      "hubs": [
         {
-          "id": "n-yar-industrial-museum-pair",
-          "name": "Музей истории Ярославского завода",
-          "ingredient": "industrial_museum",
-          "lat": 57.63,
-          "lon": 39.89,
-          "significance": 1,
+          "hub_id": "Ярославль|Ярославская область",
+          "name": "Ярославль",
+          "region": "Ярославская область",
+          "lat": 57.61667,
+          "lon": 39.85,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 57.61667, "lon": 39.85 },
+      "diameter_km": 12,
+      "coverage": {
+        "matched": ["ancient_temple"],
+        "missing": ["industrial_museum"]
+      },
+      "rarity": { "rank": 2, "total_places_with_combo": 3 },
+      "objects": [
+        {
+          "id": "n-yar-temple-1",
+          "name": "Успенский собор",
+          "ingredient": "ancient_temple",
+          "lat": 57.626,
+          "lon": 39.887,
+          "significance": 4,
           "wikidata": null,
-          "start_date": null,
-          "opening_hours": "Tu-Su 10:00-18:00",
-          "hours_status": "closed"
+          "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
+          "opening_hours": null,
+          "hours_status": "unknown"
         }
       ]
     },
@@ -322,7 +345,7 @@
         "matched": ["ancient_temple"],
         "missing": ["industrial_museum"]
       },
-      "rarity": { "rank": 1, "total_places_with_combo": 2 },
+      "rarity": { "rank": 3, "total_places_with_combo": 3 },
       "objects": [
         {
           "id": "n-borisoglebsky-monastery",

@@ -1,5 +1,6 @@
 import { HoursStatus } from "./HoursStatus";
-import { ETALON_PAIR_ID } from "../ids";
+import { INGREDIENT_NAME_RU } from "../catalog/ingredients";
+import { ETALON_CLUSTER_ID } from "../ids";
 import type { CardState, Place } from "../types/contract";
 
 type Props = {
@@ -9,27 +10,31 @@ type Props = {
   onSelect: (clusterId: string) => void;
 };
 
+function ingredientLabel(id: string): string {
+  return INGREDIENT_NAME_RU[id] ?? id;
+}
+
 function routingLabel(code: CardState["code"], reason: string | null): string {
-  if (code === "no_route") return reason ? `no_route: ${reason}` : "no_route";
-  if (code === "misresolved") return reason ? `misresolved: ${reason}` : "misresolved";
-  if (code === "not_sellable") {
-    return reason ? `not_sellable: ${reason}` : "not_sellable";
-  }
-  if (code === "missing_price") {
-    return reason ? `missing_price: ${reason}` : "missing_price";
-  }
-  return reason ?? "";
+  if (reason) return reason;
+  if (code === "no_route") return "Билета по этому плечу нет";
+  if (code === "misresolved") return "Город определён неверно";
+  if (code === "not_sellable") return "Дальше своим ходом";
+  if (code === "missing_price") return "Цены на плечо нет";
+  return "";
 }
 
 export function PlaceCard({ place, selected, state, onSelect }: Props) {
   const onYourOwn = place.hubs.some((hub) => hub.probe_status === "not_sellable");
   const probeMisresolved = place.hubs.some((hub) => hub.probe_status === "misresolved");
-  const isPair = place.cluster_id === ETALON_PAIR_ID;
+  const isEtalon = place.cluster_id === ETALON_CLUSTER_ID;
+  const covered = place.coverage.matched.length;
+  const coverageTotal = covered + place.coverage.missing.length;
   const classes = [
     "place-card",
     selected ? "selected" : "",
     state.grey ? "grey" : "",
-    isPair ? "pair-card" : "",
+    onYourOwn ? "on-foot" : "",
+    isEtalon ? "etalon-card" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -39,7 +44,7 @@ export function PlaceCard({ place, selected, state, onSelect }: Props) {
       <button type="button" className="place-hit" onClick={() => onSelect(place.cluster_id)}>
         <header>
           <h3>{place.title}</h3>
-          {isPair ? <span className="pair-mark">пара эталона</span> : null}
+          {onYourOwn ? <span className="own-mark">дальше своим ходом</span> : null}
         </header>
         <ul className="hub-chips">
           {place.hubs.map((hub) => (
@@ -49,36 +54,43 @@ export function PlaceCard({ place, selected, state, onSelect }: Props) {
                 <span className="chip-note">своим ходом</span>
               ) : null}
               {hub.probe_status === "misresolved" ? (
-                <span className="chip-note">misresolved</span>
+                <span className="chip-note">город неверен</span>
               ) : null}
             </li>
           ))}
         </ul>
         <p className="hubs">диаметр {place.diameter_km} км</p>
         <p className="coverage">
-          покрытие: {place.coverage.matched.join(", ") || "—"}
+          покрытие {covered}/{coverageTotal}
+          {place.coverage.matched.length > 0
+            ? ` · есть: ${place.coverage.matched.map(ingredientLabel).join(", ")}`
+            : ""}
           {place.coverage.missing.length > 0
-            ? ` · нет: ${place.coverage.missing.join(", ")}`
+            ? ` · нет: ${place.coverage.missing.map(ingredientLabel).join(", ")}`
             : ""}
         </p>
         <p className="rarity">
-          rarity.rank {place.rarity.rank} / {place.rarity.total_places_with_combo}
+          такая связка встречается в {place.rarity.total_places_with_combo} местах
         </p>
         <ul className="objects">
           {place.objects.map((obj) => (
             <li key={obj.id}>
-              {obj.name} · {obj.ingredient} ·{" "}
+              {obj.name} · {ingredientLabel(obj.ingredient)} ·{" "}
               <HoursStatus status={obj.hours_status} openingHours={obj.opening_hours} />
             </li>
           ))}
         </ul>
         {onYourOwn ? (
-          <p className="own">дальше своим ходом (probe_status=not_sellable)</p>
+          <p className="own">
+            {state.reason
+              ? `Дальше своим ходом: ${state.reason}`
+              : "Дальше своим ходом: билета до этого узла нет"}
+          </p>
         ) : null}
         {probeMisresolved ? (
-          <p className="own">probe misresolved — это не not_sellable</p>
+          <p className="own">Город определён неверно - это не «своим ходом».</p>
         ) : null}
-        {state.grey && (state.code || state.reason) ? (
+        {state.grey && (state.code || state.reason) && !onYourOwn ? (
           <p className={`grey-reason code-${state.code ?? "other"}`}>
             {routingLabel(state.code, state.reason)}
           </p>

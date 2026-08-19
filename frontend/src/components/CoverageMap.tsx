@@ -112,7 +112,7 @@ export function CoverageMap({ mode, emptyPlaces, hasIngredients }: Props) {
       </ul>
       {emptyPlaces && hasIngredients ? (
         <p className="ingest-hole">
-          Пустая фаза 1 вне залитых областей — дыра ингеста, не «таких мест нет».
+          Пустая выдача вне залитых областей - дыра в данных, не «таких мест нет».
         </p>
       ) : null}
       {data.source === "static-fallback" ? (

@@ -39,13 +39,13 @@ export function OriginForm({
 }: Props) {
   return (
     <section className={enabled ? "origin" : "origin inactive"}>
-      <h2>Origin и цены</h2>
+      <h2>Откуда и цены</h2>
       {!enabled ? (
-        <p>Сначала выберите карточку места. Город выезда — не вход поиска.</p>
+        <p>Сначала выберите карточку места. Город выезда - не вход поиска.</p>
       ) : null}
       <fieldset disabled={!enabled}>
         <label>
-          Origin
+          Откуда
           <input value={origin} onChange={(event) => onOrigin(event.target.value)} />
         </label>
         <label>

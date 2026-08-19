@@ -338,11 +338,11 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <div>
-          <p className="kicker">инверсия: сначала места, потом origin</p>
+          <p className="kicker">сначала места, потом город выезда</p>
           <h1>Бургер</h1>
           <p className="lede">
             Конструктор поездки: интересы и радиус → кластеры без цен → один
-            кластер → origin и живой поток маршрута.
+            кластер → откуда едете и живой поток маршрута.
           </p>
         </div>
         <div className="topbar-actions">
@@ -383,14 +383,14 @@ export function App() {
           ) : null}
           {emptyPlaces ? (
             <p className="ingest-hole banner">
-              Пустая выдача. Вне залитых областей это дыра ингеста, не отсутствие
+              Пустая выдача. Вне залитых областей это дыра в данных, не отсутствие
               комбинации.
             </p>
           ) : null}
           {unknownFromShare ? (
             <div className="not-found">
               <h3>404</h3>
-              <p>cluster_id из ссылки нет в текущей выдаче.</p>
+              <p>Этого места нет в текущей выдаче.</p>
             </div>
           ) : null}
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { INGREDIENT_NAME_RU } from "../catalog/ingredients";
 import type { Place } from "../types/contract";
 
 type Props = {
@@ -10,9 +11,16 @@ type Props = {
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
 function hoursLabel(status: string, openingHours: string | null): string {
-  if (!openingHours) return "unknown";
-  if (status === "open" || status === "closed") return status;
-  return "unknown";
+  if (!openingHours) return "неизвестно";
+  if (status === "open") return "открыт";
+  if (status === "closed") return "закрыт";
+  return "неизвестно";
+}
+
+function hubExtra(probeStatus: string): string {
+  if (probeStatus === "not_sellable") return "своим ходом";
+  if (probeStatus === "misresolved") return "город неверен";
+  return "";
 }
 
 export function ClusterMap({ place }: Props) {
@@ -48,7 +56,7 @@ export function ClusterMap({ place }: Props) {
             properties: {
               kind: "poi",
               name: obj.name,
-              extra: obj.ingredient,
+              extra: INGREDIENT_NAME_RU[obj.ingredient] ?? obj.ingredient,
               hours: hoursLabel(obj.hours_status, obj.opening_hours),
             },
             geometry: { type: "Point" as const, coordinates: [obj.lon, obj.lat] },
@@ -60,7 +68,7 @@ export function ClusterMap({ place }: Props) {
             properties: {
               kind: "hub",
               name: hub.name,
-              extra: hub.probe_status,
+              extra: hubExtra(hub.probe_status),
               hours: "",
             },
             geometry: { type: "Point" as const, coordinates: [hub.lon, hub.lat] },
@@ -127,8 +135,8 @@ export function ClusterMap({ place }: Props) {
       <h2>{place ? place.title : "Карта"}</h2>
       <p className="map-caption">
         {place
-          ? "Хабы и объекты выбранного кластера. Цен нет — фаза 1."
-          : "Выберите карточку — на карте появятся точки кластера."}
+          ? "Хабы и объекты выбранного кластера. Цен нет - это ещё не маршрут."
+          : "Выберите карточку - на карте появятся точки кластера."}
       </p>
       <div ref={rootRef} className="map" />
     </section>
