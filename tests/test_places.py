@@ -1,4 +1,8 @@
-"""SC-ranking hard gates for POST /api/places. Top-5 is smoke, not an assert."""
+"""SC-ranking hard gates for POST /api/places. Top-5 is smoke, not an assert.
+
+Etalon v2: honest card is single-hub Uglich (not_sellable / on-foot).
+Yaroslavl+Rostov stays in places[] as almost-fits (coverage 1/2).
+"""
 
 from __future__ import annotations
 
@@ -89,7 +93,8 @@ class PlacesTests(unittest.TestCase):
         return body
 
     def test_sc_b1_pair_exists_in_places(self) -> None:
-        # Smoke on gold fixtures: pair is often in the first five. NOT an assert.
+        # Hard SC-B1 (etalon v2): Uglich single-hub in places[], full coverage,
+        # probe_status=not_sellable (on-foot). Top-5 / pair-in-top-5 is NOT a gate.
         etalon = _load_fixture("etalon_1.json")
         body = self._post(ETALON_BURGER, radius_km=100, limit=20)
         ids = [p["cluster_id"] for p in body["places"]]
@@ -97,6 +102,13 @@ class PlacesTests(unittest.TestCase):
         card = next(p for p in body["places"] if p["cluster_id"] == etalon["cluster_id"])
         self.assertEqual(set(card["coverage"]["matched"]), set(ETALON_BURGER))
         self.assertEqual(card["coverage"]["missing"], [])
+        self.assertEqual(len(card["hubs"]), 1)
+        self.assertEqual(card["hubs"][0]["probe_status"], "not_sellable")
+        almost_id = etalon["almost_fits_pair_id"]
+        self.assertIn(almost_id, ids)
+        almost = next(p for p in body["places"] if p["cluster_id"] == almost_id)
+        self.assertEqual(len(almost["coverage"]["matched"]), 1)
+        self.assertIn("industrial_museum", almost["coverage"]["missing"])
         self.assertNotIn("origin", body)
         self.assertNotIn("price", body)
         for place in body["places"]:
@@ -105,10 +117,6 @@ class PlacesTests(unittest.TestCase):
                 self.assertNotIn("sellable", hub)
                 self.assertIn(hub["probe_status"], ("sellable", "not_sellable", "misresolved"))
         _coverage_ok(body["places"])
-        backup_id = _load_fixture("backup_single_hub.json")["cluster_id"]
-        single = next((p for p in body["places"] if p["cluster_id"] == backup_id), None)
-        if single is not None and len(single["coverage"]["matched"]) == 2:
-            pass
 
     def test_sc_b2_backup_exists_in_places(self) -> None:
         # Smoke on gold fixtures: backup is often in the first five. NOT an assert.
@@ -178,20 +186,22 @@ class PlacesTests(unittest.TestCase):
         self.assertEqual(boris["hubs"][0]["probe_status"], "not_sellable")
 
     def test_hub_filtered_pois_find_etalon_pair(self) -> None:
+        # Etalon v2 is one hub; hub-filtered POIs must still yield full coverage.
         etalon = _load_fixture("etalon_1.json")
         cid = etalon["cluster_id"]
         rest = cid[2:] if cid.startswith("c:") else cid
         want = set(rest.split(","))
+        self.assertEqual(len(want), 1)
         hubs = load_hubs(self.conn)
         pois = load_pois(self.conn)
         indexed = index_pois_by_hub(pois)
-        pair = tuple(h for h in hubs if h["id"] in want)
-        self.assertEqual(len(pair), 2)
-        scoped = pois_for_hubs(indexed, pair)
+        hub_set = tuple(h for h in hubs if h["id"] in want)
+        self.assertEqual(len(hub_set), 1)
+        scoped = pois_for_hubs(indexed, hub_set)
         self.assertTrue(scoped)
         for poi in scoped:
             self.assertIn(poi["hub_id"], want)
-        place = build_place(pair, scoped, ETALON_BURGER, 100)
+        place = build_place(hub_set, scoped, ETALON_BURGER, 100)
         self.assertIsNotNone(place)
         assert place is not None
         self.assertEqual(place["cluster_id"], etalon["cluster_id"])
