@@ -14,7 +14,7 @@ export function AlmostFits({ places, selectedId, cardState, onSelect }: Props) {
     <section className="almost">
       <h3>Почти подходит</h3>
       <p className="almost-lead">
-        Покрыт не весь бургер (coverage.missing). Не смешивается с полным топом.
+        Не хватает части бургера. Эти места всё равно можно выбрать.
       </p>
       {places.map((place) => (
         <PlaceCard

@@ -25,7 +25,7 @@ function formatHotel(hotel: HotelEvent): string {
   if (hotel.min_price === 0) {
     return `${hotel.city}: нет тарифа жилья`;
   }
-  return `${hotel.city}: ${hotel.min_price} ${hotel.currency} за пребывание (stay_total, ${hotel.nights} ноч.)`;
+  return `${hotel.city}: ${hotel.min_price} ${hotel.currency} за пребывание, не за ночь (${hotel.nights} ноч.)`;
 }
 
 function sourceMark(source: "live" | "cache"): string {
@@ -48,6 +48,14 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       (item.event === "leg" || item.event === "hotel") && item.data.source === "cache",
   );
   const is404 = error === "404 unknown cluster_id";
+  const hasPricedLeg = events.some(
+    (item) => item.event === "leg" && item.data.price > 0,
+  );
+  const onFootIncomplete = events.some(
+    (item) =>
+      item.event === "warning" &&
+      (item.data.code === "no_route" || item.data.code === "not_sellable"),
+  ) && !hasPricedLeg;
 
   return (
     <section className="price-stream">
@@ -57,7 +65,7 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       {is404 ? (
         <div className="not-found">
           <h3>404</h3>
-          <p>Неизвестный cluster_id. Это HTTP 404, не SSE warning.</p>
+          <p>Такого места в выдаче нет.</p>
           <button type="button" onClick={onRetry}>
             Повторить
           </button>
@@ -74,7 +82,7 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
         {events.map((item, index) => (
           <li key={`${item.event}-${index}`} className="sse-item">
             <strong>{item.event}</strong>
-            {item.event === "resolved" ? ` origin ${item.data.origin.name}` : null}
+            {item.event === "resolved" ? ` город выезда ${item.data.origin.name}` : null}
             {item.event === "leg" ? (
               <>
                 {" "}
@@ -93,8 +101,8 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
                 </span>
               </>
             ) : null}
-            {item.event === "warning" ? ` ${item.data.code}: ${item.data.message}` : null}
-            {item.event === "done" ? ` ${item.data.cluster_id}` : null}
+            {item.event === "warning" ? ` ${item.data.message}` : null}
+            {item.event === "done" ? (item.data.ok ? " готово" : " без билета") : null}
           </li>
         ))}
       </ol>
@@ -116,8 +124,13 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
           <p>итого: {breakdown.data.total} {breakdown.data.currency}</p>
           <p className="price-status">{breakdown.data.price_status}</p>
         </div>
+      ) : done && onFootIncomplete ? (
+        <p>
+          До места билета нет - транспортную сумму показать не из чего. Дальше
+          своим ходом.
+        </p>
       ) : done ? (
-        <p>Поток завершён без раскладки — итог не готов.</p>
+        <p>Поток завершён без раскладки - итог не готов.</p>
       ) : null}
       {checkout
         ? checkout.data.items.map((item, index) => (
