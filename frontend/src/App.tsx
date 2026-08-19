@@ -9,7 +9,7 @@ import { OriginForm } from "./components/OriginForm";
 import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
-import { DEFAULT_RADIUS, ETALON_INGREDIENTS, ETALON_PAIR_ID } from "./ids";
+import { DEFAULT_RADIUS, ETALON_INGREDIENTS } from "./ids";
 import { HttpError } from "./mocks/priceStream";
 import { encodeShare, parseShare, shareHref, type ShareState } from "./share";
 import type {
@@ -27,13 +27,6 @@ function parseAges(raw: string): number[] {
     .split(",")
     .map((part) => Number(part.trim()))
     .filter((n) => Number.isFinite(n) && n > 0);
-}
-
-function sameBurger(a: string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false;
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.every((id, i) => id === right[i]);
 }
 
 function defaultApiMode(): ApiMode {
@@ -57,6 +50,28 @@ function bootShare(): ShareState {
     };
   }
   return parseShare(window.location.search);
+}
+
+function noRouteRecovered(
+  warning: Extract<SseEvent, { event: "warning" }>,
+  events: SseEvent[],
+): boolean {
+  if (warning.data.recovered === true) return true;
+  const idx = events.indexOf(warning);
+  if (idx < 0) return false;
+  const fromHub = warning.data.leg?.from_hub ?? "";
+  const toHub = warning.data.leg?.to_hub ?? "";
+  if (!fromHub && !toHub) return false;
+  for (let i = idx + 1; i < events.length; i += 1) {
+    const item = events[i];
+    if (item.event !== "leg") continue;
+    if (item.data.price <= 0) continue;
+    if (fromHub && toHub && item.data.from_hub === fromHub && item.data.to_hub === toHub) {
+      return true;
+    }
+    if (toHub && item.data.to_hub === toHub) return true;
+  }
+  return false;
 }
 
 function routingGreyFromEvents(events: SseEvent[]): CardState {
@@ -88,9 +103,11 @@ function routingGreyFromEvents(events: SseEvent[]): CardState {
     };
   }
 
-  const noRoute = byCode("no_route");
-  if (noRoute) {
-    return { grey: true, reason: noRoute.data.message, code: "no_route" };
+  const noRouteOpen = warnings.filter(
+    (item) => item.data.code === "no_route" && !noRouteRecovered(item, events),
+  );
+  if (noRouteOpen.length > 0) {
+    return { grey: true, reason: noRouteOpen[0].data.message, code: "no_route" };
   }
 
   const notSellable = byCode("not_sellable");
@@ -98,7 +115,9 @@ function routingGreyFromEvents(events: SseEvent[]): CardState {
     return { grey: true, reason: notSellable.data.message, code: "not_sellable" };
   }
 
-  const missing = byCode("missing_price");
+  const missing = warnings.find(
+    (item) => item.data.code === "missing_price" || item.data.code === "no_price",
+  );
   if (missing) {
     return { grey: true, reason: missing.data.message, code: "missing_price" };
   }
@@ -124,7 +143,7 @@ export function App() {
   const [placesError, setPlacesError] = useState<string | null>(null);
   const [placesLoading, setPlacesLoading] = useState(false);
   const [placesNonce, setPlacesNonce] = useState(0);
-  const [selectedId, setSelectedId] = useState<string | null>(boot.cluster_id);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cardState, setCardState] = useState<Record<string, CardState>>({});
   const [origin, setOrigin] = useState(boot.origin ?? "Москва");
   const [days, setDays] = useState(boot.days ?? 3);
@@ -140,6 +159,8 @@ export function App() {
   const [aborted, setAborted] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const wantedClusterRef = useRef<string | null>(boot.cluster_id);
+  const shareClusterRef = useRef<string | null>(boot.cluster_id);
 
   const places = placesRes?.places ?? [];
   const fullPlaces = places.filter((place) => place.coverage.missing.length === 0);
@@ -148,11 +169,9 @@ export function App() {
     () => places.find((place) => place.cluster_id === selectedId) ?? null,
     [places, selectedId],
   );
-  const etalonCombo = sameBurger(selectedIngredients, ETALON_INGREDIENTS);
-  const pairInList = places.some((place) => place.cluster_id === ETALON_PAIR_ID);
-  const pairIndex = places.findIndex((place) => place.cluster_id === ETALON_PAIR_ID);
   const emptyPlaces =
     !placesLoading && selectedIngredients.length > 0 && places.length === 0 && !placesError;
+  const shareClusterId = selectedId ?? wantedClusterRef.current;
 
   useEffect(() => {
     if (selectedIngredients.length === 0) {
@@ -164,6 +183,7 @@ export function App() {
     }
     let cancelled = false;
     setPlacesLoading(true);
+    setSelectedId(null);
     fetchPlaces(mode, {
       ingredients: selectedIngredients,
       radius_km: radiusKm,
@@ -177,11 +197,15 @@ export function App() {
         setSseEvents([]);
         setSseError(null);
         setAborted(false);
+        const ids = new Set(res.places.map((place) => place.cluster_id));
+        const wanted = wantedClusterRef.current;
+        setSelectedId(wanted && ids.has(wanted) ? wanted : null);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setPlacesError(err instanceof Error ? err.message : "places failed");
         setPlacesRes(null);
+        setSelectedId(null);
       })
       .finally(() => {
         if (!cancelled) setPlacesLoading(false);
@@ -195,7 +219,7 @@ export function App() {
     const next = encodeShare({
       ingredients: selectedIngredients,
       radius_km: radiusKm,
-      cluster_id: selectedId,
+      cluster_id: shareClusterId,
       origin,
       days,
       month,
@@ -209,6 +233,7 @@ export function App() {
     selectedIngredients,
     radiusKm,
     selectedId,
+    shareClusterId,
     origin,
     days,
     month,
@@ -224,7 +249,7 @@ export function App() {
   };
 
   const startPrice = () => {
-    if (!selectedId) return;
+    if (!selectedPlace) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -233,7 +258,7 @@ export function App() {
     setSseEvents([]);
     setSseError(null);
     setCardState({});
-    const clusterId = selectedId;
+    const clusterId = selectedPlace.cluster_id;
     streamPrice(
       mode,
       {
@@ -276,6 +301,7 @@ export function App() {
 
   const handleSelect = (clusterId: string) => {
     if (streaming) abortPrice();
+    wantedClusterRef.current = clusterId;
     setSelectedId(clusterId);
   };
 
@@ -283,7 +309,7 @@ export function App() {
     const href = shareHref({
       ingredients: selectedIngredients,
       radius_km: radiusKm,
-      cluster_id: selectedId,
+      cluster_id: shareClusterId,
       origin,
       days,
       month,
@@ -302,10 +328,11 @@ export function App() {
   };
 
   const unknownFromShare =
-    Boolean(selectedId) &&
+    Boolean(shareClusterRef.current) &&
     !placesLoading &&
     places.length > 0 &&
-    !selectedPlace;
+    !places.some((place) => place.cluster_id === shareClusterRef.current) &&
+    selectedPlace === null;
 
   return (
     <div className="app">
@@ -335,6 +362,7 @@ export function App() {
             onChange={setRadiusKm}
           />
           <CoverageMap
+            mode={mode}
             emptyPlaces={emptyPlaces}
             hasIngredients={selectedIngredients.length > 0}
           />
@@ -365,13 +393,6 @@ export function App() {
               <p>cluster_id из ссылки нет в текущей выдаче.</p>
             </div>
           ) : null}
-          {etalonCombo && pairInList ? (
-            <p className="hint">
-              Список не сортируется. Пара «Ярославль и Ростов Великий» в ответе
-              {pairIndex >= 5 ? " ниже пятого" : ` на месте ${pairIndex + 1}`}. Для
-              SSE кликните карточку пары, даже если выше одиночный Ярославль.
-            </p>
-          ) : null}
 
           <div className="stage">
             <PlaceList
@@ -393,7 +414,7 @@ export function App() {
           />
 
           <OriginForm
-            enabled={Boolean(selectedId)}
+            enabled={selectedPlace != null}
             origin={origin}
             days={days}
             month={month}

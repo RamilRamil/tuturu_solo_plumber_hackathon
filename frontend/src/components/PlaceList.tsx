@@ -44,7 +44,7 @@ export function PlaceList({
       ))}
       {rest.length > 0 ? (
         <section className="more-places">
-          <h3>Ещё в порядке ответа (ниже пятого, кликабельны)</h3>
+          <h3>Ещё места</h3>
           {rest.map((place) => (
             <PlaceCard
               key={place.cluster_id}

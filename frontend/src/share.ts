@@ -58,7 +58,7 @@ export function parseShare(search: string): ShareState {
   return {
     ingredients,
     radius_km,
-    cluster_id: params.get("cluster_id"),
+    cluster_id: params.get("cluster_id") || null,
     origin: params.get("origin"),
     days: Number.isFinite(daysNum) && daysNum >= 1 ? daysNum : null,
     month: params.get("month"),
