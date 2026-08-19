@@ -1,4 +1,4 @@
-"""POST /api/price SSE. Etalon cluster_id from fixtures/etalon_1.json, not places[0]."""
+"""POST /api/price SSE. Etalon v2 is Uglich; priced legs live on backup/pair."""
 
 from __future__ import annotations
 
@@ -115,6 +115,9 @@ class PriceApiTests(unittest.TestCase):
         price_router.EVENT_PAUSE_S = 0
         self.etalon = _load_json("etalon_1.json")
         self.backup = _load_json("backup_single_hub.json")
+        self.uglich_id = self.etalon["cluster_id"]
+        self.pair_id = self.etalon["almost_fits_pair_id"]
+        self.priced_id = self.backup["cluster_id"]
 
     def tearDown(self) -> None:
         price_svc.FIRST_LEG_PAUSE_S = self._leg_pause
@@ -172,29 +175,31 @@ class PriceApiTests(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 404)
         self.assertNotIn("event: warning", str(ctx.exception.detail))
 
-    def test_etalon_id_is_pair_not_places0_or_backup(self) -> None:
-        pair = self.etalon["cluster_id"]
-        single = self.backup["cluster_id"]
-        self.assertNotEqual(pair, single)
-        self.assertIn(",", pair)
+    def test_etalon_id_is_uglich_not_places0_or_backup(self) -> None:
+        uglich = self.uglich_id
+        single = self.priced_id
+        pair = self.pair_id
+        self.assertNotEqual(uglich, single)
+        self.assertNotEqual(uglich, pair)
+        self.assertIn("\u0423\u0433\u043b\u0438\u0447", uglich)
         mcp = open_mcp(self.db_path)
         try:
-            row = load_cluster_row(mcp.conn, pair)
-            self.assertEqual(row["id"], pair)
+            row = load_cluster_row(mcp.conn, uglich)
+            self.assertEqual(row["id"], uglich)
             with self.assertRaises(UnknownCluster):
                 load_cluster_row(mcp.conn, "c:no-such-hub")
         finally:
             mcp.close()
-        resp_status, headers, body = self._price(pair)
+        resp_status, _headers, body = self._price(uglich)
         self.assertEqual(resp_status, 200)
         events = _parse_sse(body)
         done = [p for n, p in events if n == "done"]
         self.assertTrue(done)
-        self.assertEqual(done[-1]["cluster_id"], pair)
+        self.assertEqual(done[-1]["cluster_id"], uglich)
         self.assertNotEqual(done[-1]["cluster_id"], single)
 
     def test_g10_sse_resolved_leg_done_one_by_one(self) -> None:
-        status, headers, body = self._price(self.etalon["cluster_id"])
+        status, headers, body = self._price(self.priced_id)
         self.assertEqual(status, 200)
         self.assertIn("text/event-stream", (headers.get("content-type") or "").lower())
         events = _parse_sse(body)
@@ -217,9 +222,33 @@ class PriceApiTests(unittest.TestCase):
         self.assertEqual(done["price_status"], PRICE_STATUS)
         self.assertEqual(done["price_status"], "fixture-confirmed")
 
+    def test_uglich_sse_warning_no_fake_fares(self) -> None:
+        status, headers, body = self._price(self.uglich_id)
+        self.assertEqual(status, 200)
+        self.assertIn("text/event-stream", (headers.get("content-type") or "").lower())
+        events = _parse_sse(body)
+        names = [n for n, _p in events]
+        self.assertEqual(names[0], "resolved")
+        self.assertEqual(names[-1], "done")
+        codes = [p["code"] for n, p in events if n == "warning"]
+        self.assertIn("no_route", codes)
+        self.assertIn("not_sellable", codes)
+        legs = [p for n, p in events if n == "leg"]
+        for leg in legs:
+            self.assertGreater(leg["price"], 0)
+            self.assertNotEqual(leg["price"], 0)
+        brs = [p for n, p in events if n == "breakdown"]
+        if not legs:
+            self.assertFalse(brs)
+        else:
+            self.assertTrue(brs)
+            self.assertGreater(brs[0]["transport"], 0)
+        self.assertEqual(events[-1][1]["cluster_id"], self.uglich_id)
+        self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+
     def test_fixture_confirmed_not_sc_price_4342(self) -> None:
         status, _headers, body = self._price(
-            self.etalon["cluster_id"], budget_scope="all"
+            self.priced_id, budget_scope="all"
         )
         self.assertEqual(status, 200)
         events = _parse_sse(body)
@@ -230,7 +259,7 @@ class PriceApiTests(unittest.TestCase):
 
     def test_hotel_stay_total_not_times_nights(self) -> None:
         status, _headers, body = self._price(
-            self.etalon["cluster_id"], budget_scope="all"
+            self.priced_id, budget_scope="all"
         )
         self.assertEqual(status, 200)
         events = _parse_sse(body)
@@ -313,7 +342,7 @@ class PriceApiTests(unittest.TestCase):
         try:
             from backend.services.price import iter_price_events
 
-            req = self._price_body(self.etalon["cluster_id"])
+            req = self._price_body(self.uglich_id)
             list(iter_price_events(req, mcp))
             self.assertEqual(calls["n"], 0)
         finally:
@@ -327,18 +356,18 @@ class PriceApiTests(unittest.TestCase):
         self.assertEqual(doc["checkout_url"], checkout_url_from_obj(doc))
 
     def test_deleted_cluster_is_http_404(self) -> None:
-        pair = self.etalon["cluster_id"]
+        uglich = self.uglich_id
         mcp = open_mcp(self.db_path)
         try:
             mcp.conn.execute("DELETE FROM cluster")
             mcp.conn.commit()
             with self.assertRaises(UnknownCluster):
-                load_cluster_row(mcp.conn, pair)
+                load_cluster_row(mcp.conn, uglich)
         finally:
             mcp.close()
 
         async def _run():
-            await post_price(self._req(pair), _dummy_request())
+            await post_price(self._req(uglich), _dummy_request())
 
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(_run())
@@ -346,13 +375,13 @@ class PriceApiTests(unittest.TestCase):
         self.assertNotIn("event: warning", str(ctx.exception.detail))
 
     def test_places_then_price_ok(self) -> None:
-        pair = self.etalon["cluster_id"]
+        uglich = self.uglich_id
         mcp = open_mcp(self.db_path)
         try:
             mcp.conn.execute("DELETE FROM cluster")
             mcp.conn.commit()
             with self.assertRaises(UnknownCluster):
-                load_cluster_row(mcp.conn, pair)
+                load_cluster_row(mcp.conn, uglich)
         finally:
             mcp.close()
         with TestClient(app) as client:
@@ -366,13 +395,13 @@ class PriceApiTests(unittest.TestCase):
             )
             self.assertEqual(res.status_code, 200)
             ids = [p["cluster_id"] for p in res.json()["places"]]
-            self.assertIn(pair, ids)
-        status, _headers, body = self._price(pair)
+            self.assertIn(uglich, ids)
+        status, _headers, body = self._price(uglich)
         self.assertEqual(status, 200)
         events = _parse_sse(body)
         self.assertEqual(events[0][0], "resolved")
         self.assertEqual(events[-1][0], "done")
-        self.assertEqual(events[-1][1]["cluster_id"], pair)
+        self.assertEqual(events[-1][1]["cluster_id"], uglich)
 
     def test_zero_rub_not_treated_as_price(self) -> None:
         self.assertTrue(price_is_absent(0))
@@ -402,7 +431,7 @@ class PriceApiTests(unittest.TestCase):
             mcp.call_tool = fake  # type: ignore[method-assign]
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             for leg in legs:
@@ -422,7 +451,7 @@ class PriceApiTests(unittest.TestCase):
         try:
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             self.assertTrue(all(p["source"] == "cache" for p in legs))
@@ -441,7 +470,7 @@ class PriceApiTests(unittest.TestCase):
             mcp.call_tool = boom  # type: ignore[method-assign]
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             self.assertTrue(all(p["source"] == "cache" for p in legs))
@@ -489,7 +518,7 @@ class PriceApiTests(unittest.TestCase):
             mcp.call_tool = fake  # type: ignore[method-assign]
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             self.assertTrue(any(p["source"] == "live" for p in legs))
@@ -562,7 +591,7 @@ class PriceApiTests(unittest.TestCase):
             conn.commit()
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.pair_id), mcp))
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             for leg in legs:
@@ -616,7 +645,7 @@ class PriceApiTests(unittest.TestCase):
             conn.commit()
             from backend.services.price import iter_price_events
 
-            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            events = list(iter_price_events(self._price_body(self.pair_id), mcp))
             recovered = [
                 p for n, p in events if n == "warning" and p.get("recovered") is True
             ]
@@ -634,7 +663,7 @@ class PriceApiTests(unittest.TestCase):
         try:
             from backend.services.price import iter_price_events
 
-            req = self._price_body(self.etalon["cluster_id"])
+            req = self._price_body(self.priced_id)
             req["children_ages"] = [5]
             events = list(iter_price_events(req, mcp))
             codes = [p["code"] for n, p in events if n == "warning"]
@@ -655,7 +684,7 @@ class PriceApiTests(unittest.TestCase):
 
         price_svc.quote_directed_hop = slow_hop  # type: ignore[method-assign]
         try:
-            body = self._price_body(self.etalon["cluster_id"])
+            body = self._price_body(self.priced_id)
 
             async def _run():
                 transport = httpx.ASGITransport(app=app)
@@ -688,11 +717,39 @@ class PriceApiTests(unittest.TestCase):
     )
     def test_live_tutu_network_optional(self) -> None:
         os.environ["BURGER_LIVE_TUTU"] = "1"
-        status, _headers, body = self._price(self.etalon["cluster_id"])
-        self.assertEqual(status, 200)
-        events = _parse_sse(body)
-        self.assertEqual(events[0][0], "resolved")
-        self.assertEqual(events[-1][0], "done")
+        os.environ.pop("BURGER_SC_PRICE_ACCEPTED", None)
+        try:
+            status, _headers, body = self._price(self.uglich_id)
+            self.assertEqual(status, 200)
+            events = _parse_sse(body)
+            self.assertEqual(events[0][0], "resolved")
+            self.assertEqual(events[-1][0], "done")
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            codes = [p["code"] for n, p in events if n == "warning"]
+            self.assertTrue("no_route" in codes or "not_sellable" in codes, codes)
+            for _n, payload in events:
+                if _n == "leg":
+                    self.assertGreater(payload["price"], 0)
+
+            status, _headers, body = self._price(self.priced_id)
+            self.assertEqual(status, 200)
+            events = _parse_sse(body)
+            self.assertEqual(events[0][0], "resolved")
+            self.assertEqual(events[-1][0], "done")
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertNotEqual(events[-1][1]["price_status"], "live")
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            for leg in legs:
+                self.assertGreater(leg["price"], 0)
+            checkouts = [p for n, p in events if n == "checkout"]
+            for item in checkouts[0]["items"] if checkouts else []:
+                url = item.get("checkout_url") or ""
+                self.assertTrue(url.startswith("https://"))
+                host = url.split("/")[2]
+                self.assertTrue(host.endswith("tutu.ru"))
+        finally:
+            os.environ.pop("BURGER_LIVE_TUTU", None)
 
 
 if __name__ == "__main__":
