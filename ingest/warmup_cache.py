@@ -60,6 +60,10 @@ UGLICH = (
     "\u0423\u0433\u043b\u0438\u0447",
     "\u042f\u0440\u043e\u0441\u043b\u0430\u0432\u0441\u043a\u0430\u044f \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
 )
+ROSTOV = (
+    "\u0420\u043e\u0441\u0442\u043e\u0432",
+    "\u042f\u0440\u043e\u0441\u043b\u0430\u0432\u0441\u043a\u0430\u044f \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+)
 
 _TLS = threading.local()
 
@@ -159,18 +163,66 @@ def _route_empty(doc: dict[str, Any]) -> bool:
     return _min_price_from_doc(doc) is None
 
 
+def _hotel_amount(h: dict[str, Any]) -> int | None:
+    if not isinstance(h, dict):
+        return None
+    candidates: list[Any] = [h.get("min_price")]
+    stay = h.get("stay")
+    if isinstance(stay, dict):
+        candidates.append(stay.get("stay_total"))
+    bo = h.get("best_offer")
+    if isinstance(bo, dict):
+        p = bo.get("price")
+        if isinstance(p, dict):
+            candidates.append(p.get("amount"))
+        else:
+            candidates.append(p)
+    for amt in candidates:
+        if not price_is_absent(amt):
+            return int(float(amt))
+    return None
+
+
 def _hotel_empty(doc: dict[str, Any]) -> bool:
     hotels = doc.get("hotels")
     if not isinstance(hotels, list) or not hotels:
         return True
-    offer = hotels[0]
-    if not isinstance(offer, dict):
-        return True
-    amount = offer.get("min_price")
-    stay = offer.get("stay")
-    if amount is None and isinstance(stay, dict):
-        amount = stay.get("stay_total")
-    return price_is_absent(amount)
+    return all(_hotel_amount(h) is None for h in hotels if isinstance(h, dict))
+
+
+def _normalize_hotel_doc(doc: dict[str, Any]) -> dict[str, Any]:
+    """Copy stay_total from best_offer onto hotels[] for /api/price. Do not invent."""
+    hotels = doc.get("hotels")
+    if not isinstance(hotels, list) or not hotels:
+        return doc
+    nights = 1
+    stay_top = doc.get("stay")
+    if isinstance(stay_top, dict) and stay_top.get("nights"):
+        try:
+            nights = int(stay_top["nights"])
+        except (TypeError, ValueError):
+            nights = 1
+    scored: list[tuple[int, dict[str, Any]]] = []
+    rest: list[dict[str, Any]] = []
+    for h in hotels:
+        if not isinstance(h, dict):
+            continue
+        amt = _hotel_amount(h)
+        if amt is None:
+            rest.append(h)
+            continue
+        h["min_price"] = amt
+        h["price_basis"] = "stay_total"
+        stay = h.get("stay")
+        if not isinstance(stay, dict):
+            stay = {}
+        stay["stay_total"] = amt
+        stay.setdefault("nights", nights)
+        h["stay"] = stay
+        scored.append((amt, h))
+    scored.sort(key=lambda t: t[0])
+    doc["hotels"] = [h for _amt, h in scored] + rest
+    return doc
 
 
 def _stay_total(payload: Any) -> None:
@@ -339,7 +391,7 @@ def _run_job(db_path: Path, job: dict[str, Any]) -> dict[str, Any]:
             },
         )
         _stay_total(raw)
-        doc = _store_doc(raw)
+        doc = _normalize_hotel_doc(_store_doc(raw))
         empty = _hotel_empty(doc)
         return {
             "ok": True,
@@ -376,6 +428,111 @@ def _fill_ok_leg_min_price(
         (min_price, origin_hub, dest_hub),
     )
     return int(cur.rowcount or 0)
+
+
+def rewrite_hotel_stay_total(conn: Any) -> dict[str, Any]:
+    """Rewrite stored hotel_cache so hotels[0].stay.stay_total is live min."""
+    rows = conn.execute(
+        "SELECT hub_id, check_in, check_out, adults, pax_sig, payload_json, fetched_at FROM hotel_cache"
+    ).fetchall()
+    rewritten = 0
+    mins: dict[str, int] = {}
+    for row in rows:
+        doc = json.loads(row["payload_json"])
+        if not isinstance(doc, dict):
+            continue
+        doc = _normalize_hotel_doc(doc)
+        hotels = doc.get("hotels") if isinstance(doc.get("hotels"), list) else []
+        amt = _hotel_amount(hotels[0]) if hotels else None
+        conn.execute(
+            """
+            UPDATE hotel_cache
+            SET payload_json = ?
+            WHERE hub_id = ? AND check_in = ? AND check_out = ? AND adults = ? AND pax_sig = ?
+            """,
+            (
+                json.dumps(doc, ensure_ascii=True),
+                row["hub_id"],
+                row["check_in"],
+                row["check_out"],
+                row["adults"],
+                row["pax_sig"],
+            ),
+        )
+        rewritten += 1
+        if amt is not None:
+            key = str(row["hub_id"])
+            prev = mins.get(key)
+            if prev is None or amt < prev:
+                mins[key] = amt
+    conn.commit()
+    return {"rewritten": rewritten, "min_stay_total": mins}
+
+
+def fill_ok_leg_prices(db_path: Path, day: str, adults: int = 1) -> dict[str, Any]:
+    """Live search on a few ok etalon-adjacent legs. Never flip no_route to ok."""
+    conn = connect(db_path)
+    conn.execute("PRAGMA busy_timeout=60000")
+    pairs = []
+    for a, b in ((YAROSLAVL, ROSTOV), (ROSTOV, YAROSLAVL)):
+        ha = _hub_row(conn, *a)
+        hb = _hub_row(conn, *b)
+        if ha and hb:
+            pairs.append((ha, hb))
+    conn.close()
+    filled = 0
+    skipped = 0
+    errors = 0
+    details: list[dict[str, Any]] = []
+    mcp = TutuMcp(db_path, timeout_s=CALL_TIMEOUT_S, max_concurrency=1)
+    mcp.conn.execute("PRAGMA busy_timeout=60000")
+    for a, b in pairs:
+        row = mcp.conn.execute(
+            """
+            SELECT status, min_price FROM leg
+            WHERE origin_hub = ? AND dest_hub = ?
+            """,
+            (a["id"], b["id"]),
+        ).fetchone()
+        if row is None or row["status"] != "ok":
+            skipped += 1
+            details.append({"from": a["id"], "to": b["id"], "skip": "not_ok_leg"})
+            continue
+        try:
+            origin_q = query_label(a.get("resolved_name"), a["name"])
+            dest_q = query_label(b.get("resolved_name"), b["name"])
+            raw = _call_with_retry(
+                mcp,
+                "search_multitransport",
+                {
+                    "origin": origin_q,
+                    "destination": dest_q,
+                    "departure_date": day,
+                    "adults": adults,
+                    "page_size": 1,
+                },
+            )
+            doc = _store_doc(raw)
+            price = _min_price_from_doc(doc)
+            if price is None:
+                skipped += 1
+                details.append({"from": a["id"], "to": b["id"], "skip": "no_live_price"})
+                continue
+            n = _fill_ok_leg_min_price(mcp.conn, a["id"], b["id"], price)
+            filled += n
+            details.append({"from": a["id"], "to": b["id"], "min_price": price, "rows": n})
+        except Exception as exc:
+            errors += 1
+            details.append({"from": a["id"], "to": b["id"], "error": str(exc)})
+    mcp.conn.commit()
+    mcp.close()
+    return {
+        "filled": filled,
+        "skipped": skipped,
+        "errors": errors,
+        "day": day,
+        "details": details,
+    }
 
 
 def run_d5(db_path: Path, workers: int = PRODUCT_CONCURRENCY) -> dict[str, Any]:
@@ -520,6 +677,7 @@ def run_d5(db_path: Path, workers: int = PRODUCT_CONCURRENCY) -> dict[str, Any]:
             unique_keys.add(key)
             hotel_n += 1
     conn.commit()
+    hotel_norm = rewrite_hotel_stay_total(conn)
     route_total = conn.execute("SELECT COUNT(*) AS n FROM route_cache").fetchone()["n"]
     hotel_total = conn.execute("SELECT COUNT(*) AS n FROM hotel_cache").fetchone()["n"]
     conn.close()
@@ -536,6 +694,7 @@ def run_d5(db_path: Path, workers: int = PRODUCT_CONCURRENCY) -> dict[str, Any]:
         "route_cache": route_total,
         "hotel_cache": hotel_total,
         "min_price_filled": min_price_filled,
+        "hotel_norm": hotel_norm,
         "by_label": by_label,
         "error_rows": error_rows,
         "windows": [d.isoformat() for d in WINDOWS],
@@ -558,12 +717,26 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", default=str(live_db_default()))
     parser.add_argument("--workers", type=int, default=PRODUCT_CONCURRENCY)
+    parser.add_argument("--normalize-hotels-only", action="store_true")
+    parser.add_argument("--fill-ok-prices", action="store_true")
+    parser.add_argument("--fill-day", default="2026-10-09")
     args = parser.parse_args()
     db_path = Path(args.db).resolve()
     db_s = str(db_path)
     if "/.worktrees/data/" in db_s:
         print("refusing data-worktree burger.db", flush=True)
         return 2
+    if args.normalize_hotels_only:
+        conn = connect(db_path)
+        conn.execute("PRAGMA busy_timeout=60000")
+        summary = rewrite_hotel_stay_total(conn)
+        conn.close()
+        print(summary, flush=True)
+        return 0
+    if args.fill_ok_prices:
+        summary = fill_ok_leg_prices(db_path, args.fill_day, adults=1)
+        print(summary, flush=True)
+        return 0
     summary = run_d5(db_path, workers=args.workers)
     print(summary, flush=True)
     return 0
