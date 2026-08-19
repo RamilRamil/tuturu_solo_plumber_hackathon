@@ -6,3 +6,7 @@ export const BACKUP_INGREDIENTS = ["ancient_temple", "ruins"] as const;
 export const RADIUS_STEPS = [50, 100, 150] as const;
 export const DEFAULT_RADIUS = 100;
 export const CHECKOUT_URL_ETALON = "https://www.tutu.ru/example";
+export const TORZHOK_ID = "c:Торжок|Тверская область";
+export const VLADIMIR_ID = "c:Владимир|Владимирская область";
+export const SUZDAL_ID = "c:Суздаль|Владимирская область";
+export const TVER_ID = "c:Тверь|Тверская область";

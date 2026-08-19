@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchPlaces, streamPrice } from "./api/client";
-import { HttpError } from "./mocks/priceStream";
+import { AlmostFits } from "./components/AlmostFits";
 import { ClusterMap } from "./components/ClusterMap";
+import { CoverageMap } from "./components/CoverageMap";
 import { IngredientMenu } from "./components/IngredientMenu";
 import { ModeToggle } from "./components/ModeToggle";
 import { OriginForm } from "./components/OriginForm";
@@ -9,15 +10,17 @@ import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
 import { DEFAULT_RADIUS, ETALON_INGREDIENTS, ETALON_PAIR_ID } from "./ids";
+import { HttpError } from "./mocks/priceStream";
+import { encodeShare, parseShare, shareHref, type ShareState } from "./share";
 import type {
   ApiMode,
   BudgetScope,
+  CardState,
   PlacesResponse,
   RadiusKm,
+  RoutingGreyCode,
   SseEvent,
 } from "./types/contract";
-
-type CardState = { grey: boolean; reason: string | null };
 
 function parseAges(raw: string): number[] {
   return raw
@@ -33,29 +36,114 @@ function sameBurger(a: string[], b: readonly string[]): boolean {
   return left.every((id, i) => id === right[i]);
 }
 
+function defaultApiMode(): ApiMode {
+  const env = import.meta.env.VITE_API_MODE_DEFAULT;
+  if (env === "live" || env === "mock") return env;
+  return import.meta.env.PROD ? "live" : "mock";
+}
+
+function bootShare(): ShareState {
+  if (typeof window === "undefined") {
+    return {
+      ingredients: [...ETALON_INGREDIENTS],
+      radius_km: DEFAULT_RADIUS,
+      cluster_id: null,
+      origin: null,
+      days: null,
+      month: null,
+      adults: null,
+      children_ages: null,
+      budget_scope: null,
+    };
+  }
+  return parseShare(window.location.search);
+}
+
+function routingGreyFromEvents(events: SseEvent[]): CardState {
+  const warnings = events.filter(
+    (item): item is Extract<SseEvent, { event: "warning" }> => item.event === "warning",
+  );
+  const resolved = events.find(
+    (item): item is Extract<SseEvent, { event: "resolved" }> => item.event === "resolved",
+  );
+  const legs = events.filter(
+    (item): item is Extract<SseEvent, { event: "leg" }> => item.event === "leg",
+  );
+  const done = events.find(
+    (item): item is Extract<SseEvent, { event: "done" }> => item.event === "done",
+  );
+  const byCode = (code: RoutingGreyCode) =>
+    warnings.find((item) => item.data.code === code);
+
+  const misWarn = byCode("misresolved");
+  const guardMis =
+    resolved &&
+    (resolved.data.origin.guard === "misresolved" ||
+      resolved.data.hubs.some((hub) => hub.guard === "misresolved"));
+  if (misWarn || guardMis) {
+    return {
+      grey: true,
+      reason: misWarn?.data.message ?? "guard rejected destination",
+      code: "misresolved",
+    };
+  }
+
+  const noRoute = byCode("no_route");
+  if (noRoute) {
+    return { grey: true, reason: noRoute.data.message, code: "no_route" };
+  }
+
+  const notSellable = byCode("not_sellable");
+  if (notSellable) {
+    return { grey: true, reason: notSellable.data.message, code: "not_sellable" };
+  }
+
+  const missing = byCode("missing_price");
+  if (missing) {
+    return { grey: true, reason: missing.data.message, code: "missing_price" };
+  }
+
+  if (done) {
+    const hasFare = legs.some((item) => item.data.price > 0);
+    if (!hasFare) {
+      return { grey: true, reason: "no priced leg", code: "missing_price" };
+    }
+  }
+
+  return { grey: false, reason: null, code: null };
+}
+
 export function App() {
-  const [mode, setMode] = useState<ApiMode>("mock");
-  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([
-    "ancient_temple",
-    "industrial_museum",
-  ]);
-  const [radiusKm, setRadiusKm] = useState<RadiusKm>(DEFAULT_RADIUS);
+  const boot = bootShare();
+  const [mode, setMode] = useState<ApiMode>(defaultApiMode);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>(
+    boot.ingredients.length > 0 ? boot.ingredients : [...ETALON_INGREDIENTS],
+  );
+  const [radiusKm, setRadiusKm] = useState<RadiusKm>(boot.radius_km);
   const [placesRes, setPlacesRes] = useState<PlacesResponse | null>(null);
   const [placesError, setPlacesError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const [placesNonce, setPlacesNonce] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(boot.cluster_id);
   const [cardState, setCardState] = useState<Record<string, CardState>>({});
-  const [origin, setOrigin] = useState("Москва");
-  const [days, setDays] = useState(3);
-  const [month, setMonth] = useState("2026-10");
-  const [adults, setAdults] = useState(1);
-  const [childrenAges, setChildrenAges] = useState("");
-  const [budgetScope, setBudgetScope] = useState<BudgetScope>("transport");
+  const [origin, setOrigin] = useState(boot.origin ?? "Москва");
+  const [days, setDays] = useState(boot.days ?? 3);
+  const [month, setMonth] = useState(boot.month ?? "2026-10");
+  const [adults, setAdults] = useState(boot.adults ?? 1);
+  const [childrenAges, setChildrenAges] = useState(boot.children_ages ?? "");
+  const [budgetScope, setBudgetScope] = useState<BudgetScope>(
+    boot.budget_scope ?? "transport",
+  );
   const [sseEvents, setSseEvents] = useState<SseEvent[]>([]);
   const [sseError, setSseError] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
+  const [aborted, setAborted] = useState(false);
+  const [shareFlash, setShareFlash] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const places = placesRes?.places ?? [];
+  const fullPlaces = places.filter((place) => place.coverage.missing.length === 0);
+  const almostPlaces = places.filter((place) => place.coverage.missing.length > 0);
   const selectedPlace = useMemo(
     () => places.find((place) => place.cluster_id === selectedId) ?? null,
     [places, selectedId],
@@ -63,15 +151,19 @@ export function App() {
   const etalonCombo = sameBurger(selectedIngredients, ETALON_INGREDIENTS);
   const pairInList = places.some((place) => place.cluster_id === ETALON_PAIR_ID);
   const pairIndex = places.findIndex((place) => place.cluster_id === ETALON_PAIR_ID);
+  const emptyPlaces =
+    !placesLoading && selectedIngredients.length > 0 && places.length === 0 && !placesError;
 
   useEffect(() => {
     if (selectedIngredients.length === 0) {
       setPlacesRes(null);
       setPlacesError(null);
+      setPlacesLoading(false);
       setSelectedId(null);
       return;
     }
     let cancelled = false;
+    setPlacesLoading(true);
     fetchPlaces(mode, {
       ingredients: selectedIngredients,
       radius_km: radiusKm,
@@ -84,19 +176,46 @@ export function App() {
         setCardState({});
         setSseEvents([]);
         setSseError(null);
-        setSelectedId((prev) =>
-          prev && res.places.some((place) => place.cluster_id === prev) ? prev : null,
-        );
+        setAborted(false);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setPlacesError(err instanceof Error ? err.message : "places failed");
         setPlacesRes(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPlacesLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [mode, selectedIngredients, radiusKm]);
+  }, [mode, selectedIngredients, radiusKm, placesNonce]);
+
+  useEffect(() => {
+    const next = encodeShare({
+      ingredients: selectedIngredients,
+      radius_km: radiusKm,
+      cluster_id: selectedId,
+      origin,
+      days,
+      month,
+      adults,
+      children_ages: childrenAges || null,
+      budget_scope: budgetScope,
+    });
+    const url = `${window.location.pathname}${next}${window.location.hash}`;
+    window.history.replaceState(null, "", url);
+  }, [
+    selectedIngredients,
+    radiusKm,
+    selectedId,
+    origin,
+    days,
+    month,
+    adults,
+    childrenAges,
+    budgetScope,
+  ]);
 
   const toggleIngredient = (id: string) => {
     setSelectedIngredients((prev) =>
@@ -110,24 +229,15 @@ export function App() {
     const controller = new AbortController();
     abortRef.current = controller;
     setStreaming(true);
+    setAborted(false);
     setSseEvents([]);
     setSseError(null);
-    setCardState((prev) => {
-      const next: Record<string, CardState> = { ...prev };
-      for (const place of places) {
-        if (place.cluster_id === selectedId) continue;
-        if (place.hubs.some((hub) => hub.probe_status === "not_sellable")) {
-          next[place.cluster_id] = { grey: true, reason: "дальше своим ходом" };
-        } else if (place.cluster_id !== selectedId && place.hubs.length === 1) {
-          next[place.cluster_id] = { grey: true, reason: "no_route от origin" };
-        }
-      }
-      return next;
-    });
+    setCardState({});
+    const clusterId = selectedId;
     streamPrice(
       mode,
       {
-        cluster_id: selectedId,
+        cluster_id: clusterId,
         origin,
         days,
         month,
@@ -136,7 +246,12 @@ export function App() {
         budget_scope: budgetScope,
       },
       (event) => {
-        setSseEvents((prev) => [...prev, event]);
+        setSseEvents((prev) => {
+          const next = [...prev, event];
+          const grey = routingGreyFromEvents(next);
+          setCardState(grey.grey ? { [clusterId]: grey } : {});
+          return next;
+        });
       },
       controller.signal,
     )
@@ -149,9 +264,48 @@ export function App() {
         setSseError(err instanceof Error ? err.message : "price failed");
       })
       .finally(() => {
-        if (!controller.signal.aborted) setStreaming(false);
+        setStreaming(false);
       });
   };
+
+  const abortPrice = () => {
+    abortRef.current?.abort();
+    setStreaming(false);
+    setAborted(true);
+  };
+
+  const handleSelect = (clusterId: string) => {
+    if (streaming) abortPrice();
+    setSelectedId(clusterId);
+  };
+
+  const copyShare = async () => {
+    const href = shareHref({
+      ingredients: selectedIngredients,
+      radius_km: radiusKm,
+      cluster_id: selectedId,
+      origin,
+      days,
+      month,
+      adults,
+      children_ages: childrenAges || null,
+      budget_scope: budgetScope,
+    });
+    const absolute = `${window.location.origin}${href}`;
+    try {
+      await navigator.clipboard.writeText(absolute);
+      setShareFlash(true);
+      window.setTimeout(() => setShareFlash(false), 1600);
+    } catch {
+      setShareFlash(false);
+    }
+  };
+
+  const unknownFromShare =
+    Boolean(selectedId) &&
+    !placesLoading &&
+    places.length > 0 &&
+    !selectedPlace;
 
   return (
     <div className="app">
@@ -159,54 +313,112 @@ export function App() {
         <div>
           <p className="kicker">инверсия: сначала места, потом origin</p>
           <h1>Бургер</h1>
+          <p className="lede">
+            Конструктор поездки: интересы и радиус → кластеры без цен → один
+            кластер → origin и живой поток маршрута.
+          </p>
         </div>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <div className="topbar-actions">
+          <button type="button" className="share-btn" onClick={() => void copyShare()}>
+            {shareFlash ? "ссылка скопирована" : "Поделиться"}
+          </button>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </div>
       </header>
 
-      <IngredientMenu selected={selectedIngredients} onToggle={toggleIngredient} />
-      <RadiusSlider
-        value={radiusKm}
-        totalFound={placesRes?.total_found ?? null}
-        onChange={setRadiusKm}
-      />
+      <div className="layout">
+        <aside className="rail">
+          <IngredientMenu selected={selectedIngredients} onToggle={toggleIngredient} />
+          <RadiusSlider
+            value={radiusKm}
+            totalFound={placesRes?.total_found ?? null}
+            onChange={setRadiusKm}
+          />
+          <CoverageMap
+            emptyPlaces={emptyPlaces}
+            hasIngredients={selectedIngredients.length > 0}
+          />
+        </aside>
 
-      {placesError ? <p className="error">{placesError}</p> : null}
-      {etalonCombo && pairInList ? (
-        <p className="hint">
-          SC-D2: список не сортируется. Пара «Ярославль и Ростов Великий» в ответе
-          {pairIndex >= 5 ? " ниже пятого" : ` на месте ${pairIndex + 1}`}. Для SSE кликните
-          карточку пары, даже если выше одиночный Ярославль.
-        </p>
-      ) : null}
+        <main className="main">
+          {placesError ? (
+            <p className="error">
+              {placesError}{" "}
+              <button
+                type="button"
+                className="text-btn"
+                onClick={() => setPlacesNonce((n) => n + 1)}
+              >
+                повторить
+              </button>
+            </p>
+          ) : null}
+          {emptyPlaces ? (
+            <p className="ingest-hole banner">
+              Пустая выдача. Вне залитых областей это дыра ингеста, не отсутствие
+              комбинации.
+            </p>
+          ) : null}
+          {unknownFromShare ? (
+            <div className="not-found">
+              <h3>404</h3>
+              <p>cluster_id из ссылки нет в текущей выдаче.</p>
+            </div>
+          ) : null}
+          {etalonCombo && pairInList ? (
+            <p className="hint">
+              Список не сортируется. Пара «Ярославль и Ростов Великий» в ответе
+              {pairIndex >= 5 ? " ниже пятого" : ` на месте ${pairIndex + 1}`}. Для
+              SSE кликните карточку пары, даже если выше одиночный Ярославль.
+            </p>
+          ) : null}
 
-      <div className="stage">
-        <PlaceList
-          places={places}
-          selectedId={selectedId}
-          cardState={cardState}
-          onSelect={setSelectedId}
-        />
-        <ClusterMap place={selectedPlace} />
+          <div className="stage">
+            <PlaceList
+              places={fullPlaces}
+              selectedId={selectedId}
+              cardState={cardState}
+              loading={placesLoading}
+              hasIngredients={selectedIngredients.length > 0}
+              onSelect={handleSelect}
+            />
+            <ClusterMap place={selectedPlace} />
+          </div>
+
+          <AlmostFits
+            places={almostPlaces}
+            selectedId={selectedId}
+            cardState={cardState}
+            onSelect={handleSelect}
+          />
+
+          <OriginForm
+            enabled={Boolean(selectedId)}
+            origin={origin}
+            days={days}
+            month={month}
+            adults={adults}
+            childrenAges={childrenAges}
+            budgetScope={budgetScope}
+            busy={streaming}
+            onAbort={abortPrice}
+            onOrigin={setOrigin}
+            onDays={setDays}
+            onMonth={setMonth}
+            onAdults={setAdults}
+            onChildrenAges={setChildrenAges}
+            onBudgetScope={setBudgetScope}
+            onSubmit={startPrice}
+          />
+          <PriceStream
+            events={sseEvents}
+            error={sseError}
+            streaming={streaming}
+            aborted={aborted}
+            onRetry={startPrice}
+          />
+        </main>
       </div>
-
-      <OriginForm
-        enabled={Boolean(selectedPlace)}
-        origin={origin}
-        days={days}
-        month={month}
-        adults={adults}
-        childrenAges={childrenAges}
-        budgetScope={budgetScope}
-        busy={streaming}
-        onOrigin={setOrigin}
-        onDays={setDays}
-        onMonth={setMonth}
-        onAdults={setAdults}
-        onChildrenAges={setChildrenAges}
-        onBudgetScope={setBudgetScope}
-        onSubmit={startPrice}
-      />
-      <PriceStream events={sseEvents} error={sseError} />
     </div>
   );
 }
