@@ -20,10 +20,11 @@ function resolveStatus(
 
 export function HoursStatus({ status, openingHours }: Props) {
   const shown = resolveStatus(status, openingHours);
-  const label =
-    shown === "open" ? "открыт" : shown === "closed" ? "закрыт" : "неизвестно";
+  if (shown !== "open" && shown !== "closed") return null;
+  const label = shown === "open" ? "открыт" : "закрыт";
   return (
     <span className={`hours hours-${shown}`} title={openingHours ?? ""}>
+      {" · "}
       {label}
     </span>
   );
