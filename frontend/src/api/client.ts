@@ -1,8 +1,5 @@
-import { fetchMockPlaces } from "./places";
 import { streamLivePrice } from "./price";
-import { emitMockPriceStream } from "../mocks/priceStream";
 import type {
-  ApiMode,
   CoveragePayload,
   CoverageRegion,
   CoverageRegionStatus,
@@ -111,32 +108,22 @@ async function fetchStaticCoverage(source: CoverageSource): Promise<CoveragePayl
   return null;
 }
 
-export async function fetchCoverage(mode: ApiMode): Promise<CoveragePayload> {
-  if (mode === "live") {
-    try {
-      const res = await fetch("/api/coverage");
-      if (res.ok) {
-        const body: unknown = await res.json();
-        return normalizeCoverage(body, "api");
-      }
-    } catch {
-      // live API failed; explicit static fallback below
+export async function fetchCoverage(): Promise<CoveragePayload> {
+  try {
+    const res = await fetch("/api/coverage");
+    if (res.ok) {
+      const body: unknown = await res.json();
+      return normalizeCoverage(body, "api");
     }
-    const fallback = await fetchStaticCoverage("static-fallback");
-    if (fallback) return fallback;
-    return { ...COVERAGE_FALLBACK, source: "static-fallback" };
+  } catch {
+    // live API failed; explicit static fallback below
   }
-  const mock = await fetchStaticCoverage("static");
-  return mock ?? { ...COVERAGE_FALLBACK, source: "static" };
+  const fallback = await fetchStaticCoverage("static-fallback");
+  if (fallback) return fallback;
+  return { ...COVERAGE_FALLBACK, source: "static-fallback" };
 }
 
-export async function fetchPlaces(
-  mode: ApiMode,
-  req: PlacesRequest,
-): Promise<PlacesResponse> {
-  if (mode === "mock") {
-    return fetchMockPlaces(req);
-  }
+export async function fetchPlaces(req: PlacesRequest): Promise<PlacesResponse> {
   const res = await fetch("/api/places", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -149,14 +136,9 @@ export async function fetchPlaces(
 }
 
 export async function streamPrice(
-  mode: ApiMode,
   req: PriceRequest,
   onEvent: (event: SseEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  if (mode === "mock") {
-    await emitMockPriceStream(req, onEvent, signal);
-    return;
-  }
   await streamLivePrice(req, onEvent, signal);
 }

@@ -1,6 +1,13 @@
 import { parseSseStream } from "./sse";
-import { HttpError } from "../mocks/priceStream";
 import type { PriceRequest, SseEvent } from "../types/contract";
+
+export class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 export async function streamLivePrice(
   req: PriceRequest,

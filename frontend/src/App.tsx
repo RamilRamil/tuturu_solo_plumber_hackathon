@@ -1,20 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchPlaces, streamPrice } from "./api/client";
+import { HttpError } from "./api/price";
 import { AlmostFits } from "./components/AlmostFits";
 import { ClusterMap } from "./components/ClusterMap";
 import { CoverageMap } from "./components/CoverageMap";
 import { IngredientMenu } from "./components/IngredientMenu";
-import { ModeToggle } from "./components/ModeToggle";
 import { OriginForm } from "./components/OriginForm";
 import { PlaceDetails } from "./components/PlaceDetails";
 import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
 import { DEFAULT_RADIUS, ETALON_INGREDIENTS } from "./ids";
-import { HttpError } from "./mocks/priceStream";
 import { encodeShare, parseShare, shareHref, type ShareState } from "./share";
 import type {
-  ApiMode,
   BudgetScope,
   CardState,
   PlacesResponse,
@@ -28,12 +26,6 @@ function parseAges(raw: string): number[] {
     .split(",")
     .map((part) => Number(part.trim()))
     .filter((n) => Number.isFinite(n) && n > 0);
-}
-
-function defaultApiMode(): ApiMode {
-  const env = import.meta.env.VITE_API_MODE_DEFAULT;
-  if (env === "live" || env === "mock") return env;
-  return import.meta.env.PROD ? "live" : "mock";
 }
 
 function bootShare(): ShareState {
@@ -135,7 +127,6 @@ function routingGreyFromEvents(events: SseEvent[]): CardState {
 
 export function App() {
   const boot = bootShare();
-  const [mode, setMode] = useState<ApiMode>(defaultApiMode);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>(
     boot.ingredients.length > 0 ? boot.ingredients : [...ETALON_INGREDIENTS],
   );
@@ -184,7 +175,7 @@ export function App() {
     }
     let cancelled = false;
     setPlacesLoading(true);
-    fetchPlaces(mode, {
+    fetchPlaces({
       ingredients: selectedIngredients,
       radius_km: radiusKm,
       limit: 20,
@@ -220,7 +211,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [mode, selectedIngredients, radiusKm, placesNonce]);
+  }, [selectedIngredients, radiusKm, placesNonce]);
 
   useEffect(() => {
     const next = encodeShare({
@@ -267,7 +258,6 @@ export function App() {
     setCardState({});
     const clusterId = selectedPlace.cluster_id;
     streamPrice(
-      mode,
       {
         cluster_id: clusterId,
         origin,
@@ -355,7 +345,6 @@ export function App() {
           <button type="button" className="share-btn" onClick={() => void copyShare()}>
             {shareFlash ? "ссылка скопирована" : "Поделиться"}
           </button>
-          <ModeToggle mode={mode} onChange={setMode} />
         </div>
       </header>
 
@@ -368,7 +357,6 @@ export function App() {
             onChange={setRadiusKm}
           />
           <CoverageMap
-            mode={mode}
             emptyPlaces={emptyPlaces}
             hasIngredients={selectedIngredients.length > 0}
           />

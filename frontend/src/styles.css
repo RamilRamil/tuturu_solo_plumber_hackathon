@@ -94,16 +94,6 @@ h2 { font-size: 1.15rem; }
   font-weight: 700;
 }
 
-.mode-toggle {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  display: flex;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 999px;
-}
-.mode-toggle legend { padding: 0 6px; font-size: 0.75rem; color: var(--muted); }
-
 .layout {
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
@@ -253,7 +243,7 @@ h2 { font-size: 1.15rem; }
   gap: 16px;
 }
 .stage.has-selection {
-  grid-template-columns: minmax(220px, 0.9fr) minmax(260px, 1.1fr) minmax(240px, 0.95fr);
+  grid-template-columns: minmax(200px, 0.7fr) minmax(380px, 1.8fr) minmax(220px, 0.8fr);
 }
 .stage-mid,
 .stage-price {
@@ -367,6 +357,12 @@ h2 { font-size: 1.15rem; }
 .map-wrap { min-height: 100%; }
 .map-caption { color: var(--muted); font-size: 0.85rem; margin: 0 0 10px; }
 .map { height: 460px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.stage.has-selection .map {
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+  aspect-ratio: 4 / 3;
+}
 
 .origin.inactive { opacity: 0.72; }
 .origin fieldset {
@@ -494,10 +490,16 @@ h2 { font-size: 1.15rem; }
   .layout { grid-template-columns: 1fr; }
   .stage.has-selection { grid-template-columns: 1fr; }
   .menu-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .stage.has-selection .map {
+    height: 460px;
+    aspect-ratio: auto;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 860px) {
   .stage { grid-template-columns: 1fr; }
   .stage.has-selection { grid-template-columns: 1fr; }
   .map { height: 320px; }
+  .stage.has-selection .map { height: 320px; }
 }

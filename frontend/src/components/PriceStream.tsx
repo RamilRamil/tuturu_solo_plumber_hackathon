@@ -1,3 +1,4 @@
+import { formatMoney } from "../format";
 import type {
   BreakdownEvent,
   CheckoutEvent,
@@ -18,14 +19,14 @@ function formatLeg(leg: LegEvent): string {
   if (leg.price === 0) {
     return `${leg.from_name} → ${leg.to_name}: нет тарифа`;
   }
-  return `${leg.from_name} → ${leg.to_name}: ${leg.price} ${leg.currency} (${leg.mode})`;
+  return `${leg.from_name} → ${leg.to_name}: ${formatMoney(leg.price)} ${leg.currency} (${leg.mode})`;
 }
 
 function formatHotel(hotel: HotelEvent): string {
   if (hotel.min_price === 0) {
     return `${hotel.city}: нет тарифа жилья`;
   }
-  return `${hotel.city}: ${hotel.min_price} ${hotel.currency} за пребывание, не за ночь (${hotel.nights} ноч.)`;
+  return `${hotel.city}: ${formatMoney(hotel.min_price)} ${hotel.currency} за пребывание, не за ночь (${hotel.nights} ноч.)`;
 }
 
 function sourceMark(source: "live" | "cache"): string {
@@ -91,10 +92,10 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       {breakdown ? (
         <div className="price-summary">
           <p className="price-total">
-            {breakdown.data.total} {breakdown.data.currency}
+            {formatMoney(breakdown.data.total)} {breakdown.data.currency}
           </p>
-          <p>транспорт: {breakdown.data.transport} {breakdown.data.currency}</p>
-          <p>жильё: {breakdown.data.lodging} {breakdown.data.currency}</p>
+          <p>транспорт: {formatMoney(breakdown.data.transport)} {breakdown.data.currency}</p>
+          <p>жильё: {formatMoney(breakdown.data.lodging)} {breakdown.data.currency}</p>
           <p className="price-status">{breakdown.data.price_status}</p>
         </div>
       ) : null}

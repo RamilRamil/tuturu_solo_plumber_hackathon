@@ -1,4 +1,5 @@
 import { INGREDIENT_NAME_RU } from "../catalog/ingredients";
+import { formatKm } from "../format";
 import { ETALON_CLUSTER_ID } from "../ids";
 import type { CardState, Place } from "../types/contract";
 
@@ -58,7 +59,7 @@ export function PlaceCard({ place, selected, state, onSelect }: Props) {
             </li>
           ))}
         </ul>
-        <p className="hubs">диаметр {place.diameter_km} км</p>
+        <p className="hubs">диаметр {formatKm(place.diameter_km)} км</p>
         <p className="coverage">
           покрытие {covered}/{coverageTotal}
           {place.coverage.matched.length > 0
