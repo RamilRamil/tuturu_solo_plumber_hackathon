@@ -10,14 +10,18 @@ from calendar import monthrange
 from datetime import date, timedelta
 from typing import Any, Iterator, Optional
 
+from lib.models import CLUSTER_ID_PREFIX
 from lib.tutu_mcp import (
     CALL_TIMEOUT_S,
     MAX_CONCURRENCY,
     TutuMcp,
     check_resolve,
+    extract_meta,
     load_aliases,
     normalize,
     price_is_absent,
+    sellable_modes_from_meta,
+    unwrap_tool_result,
 )
 
 PRICE_STATUS = "fixture-confirmed"
@@ -29,7 +33,7 @@ ASCII_ORIGIN_GEO = {"moscow": "fixture-mow", "moskva": "fixture-mow"}
 
 
 class UnknownCluster(Exception):
-    """cluster_id is not in table cluster (HTTP 404, not SSE warning)."""
+    """cluster_id cannot be loaded or reconstructed (HTTP 404, not SSE warning)."""
 
 
 def db_path() -> str:
@@ -49,14 +53,39 @@ def open_mcp(path: Optional[str] = None) -> TutuMcp:
     )
 
 
-def load_cluster_row(conn: sqlite3.Connection, cluster_id: str) -> sqlite3.Row:
+def parse_cluster_id_hubs(cluster_id: str) -> list[str]:
+    """Parse G2 id: cluster_id = 'c:' + ',' .join(sorted(hub_id)). Do not mint a new format."""
+    if not cluster_id.startswith(CLUSTER_ID_PREFIX):
+        raise UnknownCluster(cluster_id)
+    rest = cluster_id[len(CLUSTER_ID_PREFIX) :]
+    if not rest:
+        raise UnknownCluster(cluster_id)
+    hub_ids = rest.split(",")
+    if any(not hid for hid in hub_ids):
+        raise UnknownCluster(cluster_id)
+    return hub_ids
+
+
+def reconstruct_cluster_view(conn: sqlite3.Connection, cluster_id: str) -> dict[str, Any]:
+    hub_ids = parse_cluster_id_hubs(cluster_id)
+    for hid in hub_ids:
+        if hub_row(conn, hid) is None:
+            raise UnknownCluster(cluster_id)
+    return {
+        "id": cluster_id,
+        "hub_ids": json.dumps(hub_ids, ensure_ascii=True),
+        "title": "",
+    }
+
+
+def load_cluster_row(conn: sqlite3.Connection, cluster_id: str) -> sqlite3.Row | dict[str, Any]:
     row = conn.execute(
         "SELECT id, hub_ids, title FROM cluster WHERE id = ? LIMIT 1",
         (cluster_id,),
     ).fetchone()
-    if row is None:
-        raise UnknownCluster(cluster_id)
-    return row
+    if row is not None:
+        return row
+    return reconstruct_cluster_view(conn, cluster_id)
 
 
 def parse_hub_ids(raw: str) -> list[str]:
@@ -234,7 +263,236 @@ def checkout_url_from_obj(obj: Any) -> Optional[str]:
     url = obj.get("checkout_url")
     if isinstance(url, str) and url:
         return url
+    best = obj.get("best_offer")
+    if isinstance(best, dict):
+        nested = best.get("checkout_url")
+        if isinstance(nested, str) and nested:
+            return nested
     return None
+
+
+def payload_offers(doc: Any) -> list[dict[str, Any]]:
+    if not isinstance(doc, dict):
+        return []
+    out: list[dict[str, Any]] = []
+    for key in ("offers", "variants"):
+        items = doc.get(key)
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict):
+                out.append(item)
+    return out
+
+
+def offer_amount(off: dict[str, Any]) -> Any:
+    p = off.get("price")
+    if isinstance(p, dict):
+        return p.get("amount")
+    if p is not None:
+        return p
+    return off.get("min_price")
+
+
+def pick_priced_offer(offers: list[dict[str, Any]]) -> Optional[dict[str, Any]]:
+    best: Optional[dict[str, Any]] = None
+    best_price: Optional[int] = None
+    for off in offers:
+        amt = offer_amount(off)
+        if price_is_absent(amt):
+            continue
+        n = int(float(amt))
+        if best_price is None or n < best_price:
+            best = off
+            best_price = n
+    return best
+
+
+def cache_leg_issue(row: Optional[sqlite3.Row]) -> Optional[str]:
+    if row is None:
+        return "no_route"
+    status = row["status"] or ""
+    if status == "misresolved":
+        return "misresolved"
+    if status == "no_route":
+        return "no_route"
+    if price_is_absent(row["min_price"]):
+        return "no_price"
+    return None
+
+
+def query_city(row: sqlite3.Row) -> str:
+    return (row["resolved_name"] or row["name"] or "").strip()
+
+
+def live_hop_quote(
+    mcp: TutuMcp,
+    frm: sqlite3.Row,
+    to: sqlite3.Row,
+    day: str,
+    adults: int,
+) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    """Search one directed hop. Returns (quote, issue_code). Never books."""
+    try:
+        outcome = mcp.probe_destination(
+            origin=query_city(frm),
+            name=to["name"],
+            subject=to["subject"],
+            expected_region=to["expected_region"] or to["subject"] or "",
+            departure_date=day,
+            adults=adults,
+        )
+    except Exception:
+        return None, "cache_fallback"
+    doc = outcome.payload if isinstance(outcome.payload, dict) else {}
+    try:
+        meta = extract_meta(doc) if doc else {}
+        if not meta:
+            meta = {
+                "to": {
+                    "name": outcome.resolved_name,
+                    "region": outcome.resolved_region,
+                    "geo_id": outcome.tutu_geo_id,
+                }
+            }
+        ok, _reason = check_resolve(
+            meta,
+            to["name"],
+            to["expected_region"] or to["subject"] or "",
+        )
+        if outcome.status == "misresolved" or not ok:
+            return None, "misresolved"
+        offers = payload_offers(doc)
+        offer = pick_priced_offer(offers)
+        if offer is None:
+            if outcome.status == "not_sellable":
+                return None, "not_sellable"
+            if not offers:
+                return None, "no_route"
+            return None, "no_price"
+        price = int(float(offer_amount(offer)))
+        if price_is_absent(price):
+            return None, "no_price"
+        modes = sellable_modes_from_meta(meta, offers)
+        mode = str(offer.get("mode") or offer.get("transport") or "")
+        if not modes:
+            modes = mode
+        duration = offer.get("duration_min")
+        if duration is None:
+            duration = None
+        else:
+            try:
+                duration = int(duration)
+            except (TypeError, ValueError):
+                duration = None
+        ref = offer.get("checkout_ref")
+        if not isinstance(ref, dict):
+            ref = {}
+        url = checkout_url_from_obj(offer) or checkout_url_from_obj(doc)
+        return (
+            {
+                "price": price,
+                "modes": modes,
+                "mode": mode or pick_mode(modes),
+                "duration_min": duration,
+                "date": day,
+                "checkout_ref": ref,
+                "checkout_url": url,
+                "source": "live",
+            },
+            None,
+        )
+    except Exception:
+        return None, "cache_fallback"
+
+
+def cache_hop_quote(
+    conn: sqlite3.Connection,
+    frm: sqlite3.Row,
+    to: sqlite3.Row,
+    day: str,
+) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    row = directed_leg(conn, frm["id"], to["id"], day)
+    issue = cache_leg_issue(row)
+    if issue is not None or row is None:
+        return None, issue or "no_route"
+    cached = route_cache_payload(conn, frm["id"], to["id"], row["date_probed"])
+    checkout_ref: dict[str, Any] = {}
+    url = None
+    if cached:
+        url = checkout_url_from_obj(cached)
+        ref = cached.get("checkout_ref")
+        if isinstance(ref, dict):
+            checkout_ref = ref
+        if url is None:
+            for off in payload_offers(cached):
+                url = checkout_url_from_obj(off)
+                if url:
+                    if not checkout_ref:
+                        cref = off.get("checkout_ref")
+                        if isinstance(cref, dict):
+                            checkout_ref = cref
+                    break
+    price = int(row["min_price"])
+    if price_is_absent(price):
+        return None, "no_price"
+    return (
+        {
+            "price": price,
+            "modes": row["modes"] or "",
+            "mode": pick_mode(row["modes"] or ""),
+            "duration_min": row["duration_min"],
+            "date": row["date_probed"],
+            "checkout_ref": checkout_ref,
+            "checkout_url": url,
+            "source": "cache",
+        },
+        None,
+    )
+
+
+def live_hotel_payload(
+    mcp: TutuMcp,
+    hub: sqlite3.Row,
+    check_in: str,
+    check_out: str,
+    adults: int,
+) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    try:
+        raw = mcp.call_tool(
+            "search_hotels",
+            {
+                "city_name": query_city(hub),
+                "check_in": check_in,
+                "check_out": check_out,
+                "adults": adults,
+            },
+        )
+    except Exception:
+        return None, "cache_fallback"
+    doc = unwrap_tool_result(raw)
+    if not isinstance(doc, dict):
+        return None, "no_hotel"
+    meta = extract_meta(doc)
+    geo = {}
+    if isinstance(doc.get("meta"), dict):
+        maybe = doc["meta"].get("resolved_geo")
+        if isinstance(maybe, dict):
+            geo = maybe
+    if geo:
+        meta = {"to": {"name": geo.get("name") or "", "region": geo.get("region") or ""}}
+    if meta:
+        ok, _reason = check_resolve(
+            meta,
+            hub["name"],
+            hub["expected_region"] or hub["subject"] or "",
+        )
+        if not ok:
+            return None, "misresolved"
+    amount = stay_total_from_hotel_payload(doc)
+    if amount is None:
+        return None, "no_hotel"
+    return doc, None
 
 
 def pick_mode(modes: str) -> str:
@@ -283,6 +541,16 @@ def order_visit(
     return ordered
 
 
+WARN_MESSAGES = {
+    "misresolved": "guard rejected destination",
+    "not_sellable": "not_sellable",
+    "no_route": "no_route",
+    "no_price": "no_price",
+    "no_hotel": "no_hotel",
+    "cache_fallback": "cache_fallback",
+}
+
+
 def warning_event(
     code: str,
     message: str,
@@ -296,6 +564,40 @@ def warning_event(
         "hub_id": hub_id,
         "leg": {"from_hub": from_hub, "to_hub": to_hub},
     }
+
+
+def warn_code(code: str, hub_id: Optional[str], from_hub: str, to_hub: str) -> dict[str, Any]:
+    return warning_event(
+        code,
+        WARN_MESSAGES.get(code, code),
+        hub_id=hub_id,
+        from_hub=from_hub,
+        to_hub=to_hub,
+    )
+
+
+def quote_directed_hop(
+    mcp: TutuMcp,
+    frm: sqlite3.Row,
+    to: sqlite3.Row,
+    day: str,
+    adults: int,
+    live_on: bool,
+) -> tuple[Optional[dict[str, Any]], Optional[str], bool]:
+    live_issue: Optional[str] = None
+    if live_on:
+        quote, live_issue = live_hop_quote(mcp, frm, to, day, adults)
+        if quote is not None:
+            return quote, None, False
+    quote, cache_issue = cache_hop_quote(mcp.conn, frm, to, day)
+    if quote is not None:
+        if live_on and live_issue is not None:
+            return quote, "cache_fallback", True
+        return quote, None, False
+    issue = cache_issue or live_issue or "no_route"
+    if issue == "cache_fallback":
+        issue = cache_issue or "no_route"
+    return None, issue, False
 
 
 def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, dict[str, Any]]]:
@@ -389,56 +691,63 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
     visit = order_visit(conn, origin_row, cluster_hubs, window0)
     return_date = add_days(window0, max(0, int(req["days"]) - 1))
     priced = False
+    live_priced = False
     transport_total = 0
     lodging_total = 0
     checkout_items: list[dict[str, Any]] = []
     first_leg_sent = False
+    live_on = live_tutu_enabled()
+    adults = int(req["adults"])
     hops: list[tuple[sqlite3.Row, sqlite3.Row, str]] = []
     current = origin_row
     for dest in visit:
-        hops.append((current, dest, window0 if current["id"] == origin_row["id"] else window0))
+        hops.append((current, dest, window0))
         current = dest
     hops.append((current, origin_row, return_date))
+    prev_city = visit[-2] if len(visit) >= 2 else None
 
-    seen_return = False
-    for idx, (frm, to, day) in enumerate(hops):
+    def emit_leg(frm_h: sqlite3.Row, to_h: sqlite3.Row, quote: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
+        nonlocal priced, live_priced, transport_total, first_leg_sent
+        price = int(quote["price"])
+        if price_is_absent(price):
+            yield (
+                "warning",
+                warn_code("no_price", to_h["id"], frm_h["id"], to_h["id"]),
+            )
+            return
+        transport_total += price
+        priced = True
+        if quote.get("source") == "live":
+            live_priced = True
+        payload = {
+            "from_hub": frm_h["id"],
+            "to_hub": to_h["id"],
+            "from_name": frm_h["resolved_name"] or frm_h["name"],
+            "to_name": to_h["resolved_name"] or to_h["name"],
+            "mode": quote.get("mode") or pick_mode(quote.get("modes") or ""),
+            "modes": quote.get("modes") or "",
+            "price": price,
+            "currency": CURRENCY,
+            "duration_min": quote.get("duration_min"),
+            "date": quote.get("date"),
+            "checkout_ref": quote.get("checkout_ref") or {},
+            "source": quote.get("source") or "cache",
+        }
+        yield ("leg", payload)
+        first_leg_sent = True
+        url = quote.get("checkout_url")
+        if isinstance(url, str) and url:
+            checkout_items.append(
+                {
+                    "kind": "leg",
+                    "from_hub": frm_h["id"],
+                    "to_hub": to_h["id"],
+                    "checkout_url": url,
+                }
+            )
+
+    for frm, to, day in hops:
         is_return = to["id"] == origin_row["id"]
-        row = directed_leg(conn, frm["id"], to["id"], day)
-        if is_return:
-            seen_return = True
-            if row is None or row["status"] != "ok" or price_is_absent(row["min_price"]):
-                prev = hops[idx - 1][0] if idx > 0 else None
-                if prev is not None and prev["id"] != frm["id"]:
-                    alt = directed_leg(conn, prev["id"], origin_row["id"], day)
-                    yield (
-                        "warning",
-                        warning_event(
-                            "no_route",
-                            "no return from last city",
-                            hub_id=frm["id"],
-                            from_hub=frm["id"],
-                            to_hub=to["id"],
-                        ),
-                    )
-                    if alt is not None and alt["status"] == "ok" and not price_is_absent(alt["min_price"]):
-                        row = alt
-                        frm = prev
-                        day = alt["date_probed"] or day
-                    else:
-                        continue
-                else:
-                    yield (
-                        "warning",
-                        warning_event(
-                            "no_route",
-                            "no_route",
-                            hub_id=frm["id"],
-                            from_hub=frm["id"],
-                            to_hub=to["id"],
-                        ),
-                    )
-                    continue
-
         dest_guard = guard_status(
             meta_from_hub(to),
             to["name"],
@@ -447,84 +756,37 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
         if dest_guard != "ok" and to["id"] != origin_row["id"]:
             continue
 
-        if row is None or row["status"] == "misresolved":
-            if row is not None and row["status"] == "misresolved":
-                yield (
-                    "warning",
-                    warning_event(
-                        "misresolved",
-                        "guard rejected destination",
-                        hub_id=to["id"],
-                        from_hub=frm["id"],
-                        to_hub=to["id"],
-                    ),
-                )
-            else:
-                yield (
-                    "warning",
-                    warning_event(
-                        "no_route",
-                        "no_route",
-                        hub_id=to["id"],
-                        from_hub=frm["id"],
-                        to_hub=to["id"],
-                    ),
-                )
-            continue
-        if row["status"] == "no_route" or price_is_absent(row["min_price"]):
+        quote, issue, _used_fb = quote_directed_hop(mcp, frm, to, day, adults, live_on)
+        if is_return and quote is None and prev_city is not None and prev_city["id"] != frm["id"]:
             yield (
                 "warning",
-                warning_event(
-                    "no_route",
-                    "no_route",
-                    hub_id=to["id"],
-                    from_hub=frm["id"],
-                    to_hub=to["id"],
-                ),
+                warn_code(issue or "no_route", frm["id"], frm["id"], to["id"]),
+            )
+            quote, issue, _used_fb = quote_directed_hop(
+                mcp, prev_city, origin_row, day, adults, live_on
+            )
+            if quote is None:
+                yield (
+                    "warning",
+                    warn_code(issue or "no_route", to["id"], prev_city["id"], to["id"]),
+                )
+                continue
+            frm = prev_city
+        elif quote is None:
+            yield (
+                "warning",
+                warn_code(issue or "no_route", to["id"], frm["id"], to["id"]),
             )
             continue
-
-        cached = route_cache_payload(conn, frm["id"], to["id"], row["date_probed"])
-        source = "cache"
-        checkout_ref: Any = {}
-        url = None
-        if cached:
-            url = checkout_url_from_obj(cached)
-            ref = cached.get("checkout_ref")
-            if isinstance(ref, dict):
-                checkout_ref = ref
-        price = int(row["min_price"])
-        transport_total += price
-        priced = True
-        payload = {
-            "from_hub": frm["id"],
-            "to_hub": to["id"],
-            "from_name": frm["resolved_name"] or frm["name"],
-            "to_name": to["resolved_name"] or to["name"],
-            "mode": pick_mode(row["modes"] or ""),
-            "modes": row["modes"] or "",
-            "price": price,
-            "currency": CURRENCY,
-            "duration_min": row["duration_min"],
-            "date": row["date_probed"],
-            "checkout_ref": checkout_ref,
-            "source": source,
-        }
-        yield ("leg", payload)
-        first_leg_sent = True
-        if url:
-            checkout_items.append(
-                {
-                    "kind": "leg",
-                    "from_hub": frm["id"],
-                    "to_hub": to["id"],
-                    "checkout_url": url,
-                }
+        if issue == "cache_fallback":
+            yield (
+                "warning",
+                warn_code("cache_fallback", to["id"], frm["id"], to["id"]),
             )
-        if is_return:
-            pass
 
-    if not live_tutu_enabled():
+        yield from emit_leg(frm, to, quote)
+
+    if not live_on:
         _ = later_window_starts(req["month"], window0)
     elif first_leg_sent:
         for extra in later_window_starts(req["month"], window0):
@@ -535,28 +797,47 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
         for i, h in enumerate(visit):
             check_in = add_days(window0, i)
             check_out = add_days(check_in, 1)
-            cached_h = hotel_cache_row(conn, h["id"], check_in, check_out, int(req["adults"]))
-            if cached_h is None:
-                yield (
-                    "warning",
-                    warning_event("no_hotel", "no_hotel", hub_id=h["id"]),
+            hotel_doc: Optional[dict[str, Any]] = None
+            hotel_source = "cache"
+            live_hotel_issue: Optional[str] = None
+            if live_on:
+                hotel_doc, live_hotel_issue = live_hotel_payload(
+                    mcp, h, check_in, check_out, adults
                 )
-                continue
-            payload = json.loads(cached_h["payload_json"])
-            amount = stay_total_from_hotel_payload(payload)
+                if hotel_doc is not None:
+                    hotel_source = "live"
+            if hotel_doc is None:
+                cached_h = hotel_cache_row(conn, h["id"], check_in, check_out, adults)
+                if cached_h is None:
+                    yield (
+                        "warning",
+                        warn_code(live_hotel_issue or "no_hotel", h["id"], "", ""),
+                    )
+                    continue
+                hotel_doc = json.loads(cached_h["payload_json"])
+                hotel_source = "cache"
+                if live_on and live_hotel_issue is not None:
+                    yield (
+                        "warning",
+                        warn_code("cache_fallback", h["id"], "", ""),
+                    )
+            amount = stay_total_from_hotel_payload(hotel_doc)
             if amount is None:
                 yield (
                     "warning",
-                    warning_event("no_hotel", "no_hotel", hub_id=h["id"]),
+                    warn_code("no_hotel", h["id"], "", ""),
                 )
                 continue
-            nights = nights_from_hotel_payload(payload, 1)
+            nights = nights_from_hotel_payload(hotel_doc, 1)
             lodging_total += amount
             priced = True
             city_meta = {}
-            if isinstance(payload.get("meta"), dict):
-                city_meta = payload["meta"].get("resolved_geo") or {}
+            if isinstance(hotel_doc.get("meta"), dict):
+                city_meta = hotel_doc["meta"].get("resolved_geo") or {}
             city = city_meta.get("name") if isinstance(city_meta, dict) else None
+            href = hotel_doc.get("checkout_ref") or {}
+            if not isinstance(href, dict):
+                href = {}
             hotel_event = {
                 "hub_id": h["id"],
                 "city": city or h["resolved_name"] or h["name"],
@@ -564,11 +845,11 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
                 "currency": CURRENCY,
                 "nights": nights,
                 "price_basis": "stay_total",
-                "checkout_ref": payload.get("checkout_ref") or {},
-                "source": "cache",
+                "checkout_ref": href,
+                "source": hotel_source,
             }
             yield ("hotel", hotel_event)
-            h_url = checkout_url_from_obj(payload)
+            h_url = checkout_url_from_obj(hotel_doc)
             if h_url:
                 checkout_items.append(
                     {
@@ -579,6 +860,7 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
                     }
                 )
 
+    status = "live" if live_priced else PRICE_STATUS
     if priced:
         lodging = lodging_total if budget == "all" else 0
         total = transport_total + lodging
@@ -590,19 +872,18 @@ def iter_price_events(req: dict[str, Any], mcp: TutuMcp) -> Iterator[tuple[str, 
                 "total": total,
                 "currency": CURRENCY,
                 "budget_scope": budget,
-                "price_status": PRICE_STATUS,
+                "price_status": status,
             },
         )
 
     if checkout_items:
         yield ("checkout", {"items": checkout_items})
 
-    _ = seen_return
     yield (
         "done",
         {
             "ok": True,
             "cluster_id": req["cluster_id"],
-            "price_status": PRICE_STATUS,
+            "price_status": status,
         },
     )
