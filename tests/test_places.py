@@ -180,6 +180,12 @@ class PlacesTests(unittest.TestCase):
         self.assertIsNotNone(row)
         self.assertEqual(row["id"], etalon)
 
+    def test_coverage_endpoint_reads_json(self) -> None:
+        res = self.client.get("/api/coverage")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertIn("regions_loaded", body)
+
     def test_places_module_has_no_network_imports(self) -> None:
         text = (ROOT / "backend" / "routers" / "places.py").read_text(encoding="utf-8")
         self.assertNotIn("tutu_mcp", text)

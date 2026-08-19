@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -16,6 +19,7 @@ from backend.services.cluster_config import (
 from backend.services.cluster_places import list_places, open_db
 
 router = APIRouter()
+COVERAGE_PATH = Path(os.environ.get("BURGER_COVERAGE") or "data/coverage.json")
 
 
 class PlacesIn(BaseModel):
@@ -46,3 +50,17 @@ def post_places(body: PlacesIn) -> dict[str, Any]:
         return list_places(conn, body.ingredients, body.radius_km, body.limit)
     finally:
         conn.close()
+
+
+@router.get("/api/coverage")
+def get_coverage() -> dict[str, Any]:
+    path = COVERAGE_PATH
+    if not path.is_file():
+        return {
+            "regions_loaded": [],
+            "note": "coverage metadata missing; empty results outside the map are an ingest hole",
+        }
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=500, detail="invalid coverage.json")
+    return data
