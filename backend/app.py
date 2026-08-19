@@ -1,4 +1,9 @@
-"""Hour-0 FastAPI process: SSE smoke only. Product /api/places and /api/price are Worker B/C."""
+"""Hour-0 FastAPI process: SSE smoke + empty B/C routers.
+
+Product handlers live in backend/routers/places.py (B) and
+backend/routers/price.py (C). This file is architect-owned: streams do not
+edit it.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +13,11 @@ import json
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
+from backend.routers import places, price
+
 app = FastAPI(title="burger-backend", version="0.0.1")
+app.include_router(places.router)
+app.include_router(price.router)
 SMOKE_PAUSE_S = 1.0
 
 
