@@ -680,6 +680,14 @@ def iter_price_events(
                     hub_id=h["id"],
                 )
             )
+        elif (h["probe_status"] or "") == "not_sellable":
+            hub_warnings.append(
+                warning_event(
+                    "not_sellable",
+                    WARN_MESSAGES.get("not_sellable", "not_sellable"),
+                    hub_id=h["id"],
+                )
+            )
 
     geo_id = None
     if origin_row is not None:
