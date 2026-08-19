@@ -31,7 +31,7 @@ CLUSTER_COLS = (
     "id", "radius_km", "hub_ids", "title", "center_lat", "center_lon",
     "diameter_km", "ingredient_mask",
 )
-HOTEL_COLS = ("hub_id", "check_in", "check_out", "adults", "payload_json", "fetched_at")
+HOTEL_COLS = ("hub_id", "check_in", "check_out", "adults", "pax_sig", "payload_json", "fetched_at")
 MIS_COLS = (
     "requested", "got_name", "got_region", "expected_region",
     "expected_region_source", "at",
@@ -66,6 +66,7 @@ def load_golden_fixtures(conn: sqlite3.Connection, root: Path = FIXTURES_ROOT) -
     hotels = _read_json(rows_dir / "hotel_cache.json")
     for h in hotels:
         h["payload_json"] = _as_json_text(h["payload_json"])
+        h.setdefault("pax_sig", "")
     _insert(conn, "hotel_cache", HOTEL_COLS, hotels)
     _insert(conn, "misresolve_log", MIS_COLS, _read_json(rows_dir / "misresolve_log.json"))
     _load_mcp_cache(conn, root, _read_json(rows_dir / "mcp_cache.json"))

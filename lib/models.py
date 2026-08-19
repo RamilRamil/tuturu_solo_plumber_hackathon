@@ -40,8 +40,69 @@ def make_cluster_id(hub_ids: list[str]) -> str:
     return CLUSTER_ID_PREFIX + ",".join(sorted(set(hub_ids)))
 
 
+def pax_sig(children_ages: list[int] | tuple[int, ...] | None) -> str:
+    """Stable passenger signature. Empty string means no children."""
+    ages = sorted(int(a) for a in (children_ages or []) if int(a) > 0)
+    return ",".join(str(a) for a in ages)
+
+
+def _table_cols(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {str(row[1]) for row in conn.execute("PRAGMA table_info(%s)" % table)}
+
+
+def migrate_cache_identity(conn: sqlite3.Connection) -> None:
+    """Widen route_cache / hotel_cache PK with adults + pax_sig. Safe on new DBs."""
+    route_cols = _table_cols(conn, "route_cache")
+    if route_cols and "pax_sig" not in route_cols:
+        conn.executescript(
+            """
+            CREATE TABLE route_cache_v2 (
+              origin_hub TEXT NOT NULL,
+              dest_hub TEXT NOT NULL,
+              date TEXT NOT NULL,
+              adults INTEGER NOT NULL DEFAULT 1,
+              pax_sig TEXT NOT NULL DEFAULT '',
+              payload_json TEXT NOT NULL,
+              fetched_at TEXT NOT NULL,
+              PRIMARY KEY (origin_hub, dest_hub, date, adults, pax_sig)
+            );
+            INSERT INTO route_cache_v2(
+              origin_hub, dest_hub, date, adults, pax_sig, payload_json, fetched_at
+            )
+            SELECT origin_hub, dest_hub, date, 1, '', payload_json, fetched_at
+            FROM route_cache;
+            DROP TABLE route_cache;
+            ALTER TABLE route_cache_v2 RENAME TO route_cache;
+            """
+        )
+    hotel_cols = _table_cols(conn, "hotel_cache")
+    if hotel_cols and "pax_sig" not in hotel_cols:
+        conn.executescript(
+            """
+            CREATE TABLE hotel_cache_v2 (
+              hub_id TEXT NOT NULL,
+              check_in TEXT NOT NULL,
+              check_out TEXT NOT NULL,
+              adults INTEGER NOT NULL,
+              pax_sig TEXT NOT NULL DEFAULT '',
+              payload_json TEXT NOT NULL,
+              fetched_at TEXT NOT NULL,
+              PRIMARY KEY (hub_id, check_in, check_out, adults, pax_sig)
+            );
+            INSERT INTO hotel_cache_v2(
+              hub_id, check_in, check_out, adults, pax_sig, payload_json, fetched_at
+            )
+            SELECT hub_id, check_in, check_out, adults, '', payload_json, fetched_at
+            FROM hotel_cache;
+            DROP TABLE hotel_cache;
+            ALTER TABLE hotel_cache_v2 RENAME TO hotel_cache;
+            """
+        )
+
+
 def apply_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+    migrate_cache_identity(conn)
     conn.commit()
 
 

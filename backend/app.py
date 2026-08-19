@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -21,9 +23,24 @@ app.include_router(price.router)
 SMOKE_PAUSE_S = 1.0
 
 
+def _truthy(name: str) -> bool:
+    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
 @app.get("/healthz")
-def healthz() -> dict[str, bool]:
-    return {"ok": True}
+def healthz() -> dict[str, object]:
+    db = Path(os.environ.get("BURGER_DB") or "data/burger.db")
+    seed = _truthy("BURGER_SEED_FIXTURES")
+    data_mode = "fixtures" if seed or db.name.endswith("g10.db") else "live-data"
+    size = db.stat().st_size if db.is_file() else 0
+    return {
+        "ok": True,
+        "db_path": str(db),
+        "db_bytes": size,
+        "data_mode": data_mode,
+        "live_tutu": _truthy("BURGER_LIVE_TUTU"),
+        "sc_price_accepted": _truthy("BURGER_SC_PRICE_ACCEPTED"),
+    }
 
 
 @app.get("/_sse_smoke")

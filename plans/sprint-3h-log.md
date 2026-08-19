@@ -1,5 +1,9 @@
 # 3h local MVP sprint log
 
+Hardening checkpoint (before cache PK / cluster_id / async price): `90c0e650ddedf619cc59a0a95d47741f0d4d5b0e`
+DB snapshots: `data/backups/burger.db.pre-harden`, `burger.g10.db.pre-harden`, `burger.db.data-wt.pre-harden`.
+Data agent still running `parse_osm --wave cfd` on `.worktrees/data` (do not second-write that DB).
+
 Start: 2026-08-19 ~18:26 UTC+4. Hard stop: ~21:26 UTC+4.
 Do not push. No VPS deploy. Outcome: working local Docker Compose on `main`.
 

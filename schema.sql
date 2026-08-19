@@ -116,9 +116,11 @@ CREATE TABLE IF NOT EXISTS route_cache (
   origin_hub TEXT NOT NULL,
   dest_hub TEXT NOT NULL,
   date TEXT NOT NULL,
+  adults INTEGER NOT NULL DEFAULT 1,
+  pax_sig TEXT NOT NULL DEFAULT '',
   payload_json TEXT NOT NULL,
   fetched_at TEXT NOT NULL,
-  PRIMARY KEY (origin_hub, dest_hub, date)
+  PRIMARY KEY (origin_hub, dest_hub, date, adults, pax_sig)
 );
 
 CREATE TABLE IF NOT EXISTS hotel_cache (
@@ -126,9 +128,10 @@ CREATE TABLE IF NOT EXISTS hotel_cache (
   check_in TEXT NOT NULL,
   check_out TEXT NOT NULL,
   adults INTEGER NOT NULL,
+  pax_sig TEXT NOT NULL DEFAULT '',
   payload_json TEXT NOT NULL,
   fetched_at TEXT NOT NULL,
-  PRIMARY KEY (hub_id, check_in, check_out, adults)
+  PRIMARY KEY (hub_id, check_in, check_out, adults, pax_sig)
 );
 
 CREATE TABLE IF NOT EXISTS misresolve_log (
