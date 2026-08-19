@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import sqlite3
+import time
 from typing import Any
 
 from lib.models import make_cluster_id
@@ -15,6 +17,8 @@ from backend.services.cluster_geo import haversine_km
 from backend.services.cluster_rank import rank_places
 
 TITLE_JOIN = " and "
+PAIRWISE_DIAMETER_MAX_N = 40
+_CENTER_EPS = 1e-9
 
 
 def burger_db_path() -> str:
@@ -106,6 +110,40 @@ def compute_significance(row: sqlite3.Row | dict[str, Any]) -> float:
     )
 
 
+def index_pois_by_hub(pois: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Group POIs by ingest hub_id. Unattached rows are omitted."""
+    indexed: dict[str, list[dict[str, Any]]] = {}
+    for poi in pois:
+        hid = poi.get("hub_id")
+        if not hid:
+            continue
+        bucket = indexed.get(hid)
+        if bucket is None:
+            indexed[hid] = [poi]
+        else:
+            bucket.append(poi)
+    return indexed
+
+
+def pois_for_hubs(
+    indexed: dict[str, list[dict[str, Any]]],
+    hubs: tuple[dict[str, Any], ...],
+) -> list[dict[str, Any]]:
+    """POIs attached to candidate hubs only. Attach radius 50km > r_local 25km."""
+    if len(hubs) == 1:
+        return list(indexed.get(hubs[0]["id"], ()))
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for hub in hubs:
+        for poi in indexed.get(hub["id"], ()):
+            pid = poi["id"]
+            if pid in seen:
+                continue
+            seen.add(pid)
+            out.append(poi)
+    return out
+
+
 def poi_in_discs(poi: dict[str, Any], hubs: tuple[dict[str, Any], ...], r_local_km: float) -> bool:
     for hub in hubs:
         if haversine_km(poi["lat"], poi["lon"], hub["lat"], hub["lon"]) <= r_local_km:
@@ -127,16 +165,76 @@ def _start_date(poi: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _diameter_km(pois: list[dict[str, Any]]) -> float:
+def _cross(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
+def _convex_hull_pois(pois: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Andrew monotone chain on local km projection. Hull vertices keep full POI dicts."""
+    n = len(pois)
+    if n <= 2:
+        return list(pois)
+    lat0 = sum(p["lat"] for p in pois) / n
+    cos0 = math.cos(math.radians(lat0))
+    pts: list[tuple[float, float, dict[str, Any]]] = []
+    for poi in pois:
+        x = poi["lon"] * cos0
+        y = poi["lat"]
+        pts.append((x, y, poi))
+    pts.sort(key=lambda t: (t[0], t[1], t[2]["id"]))
+
+    def _push(hull: list[tuple[float, float, dict[str, Any]]], item: tuple[float, float, dict[str, Any]]) -> None:
+        while len(hull) >= 2 and _cross((hull[-2][0], hull[-2][1]), (hull[-1][0], hull[-1][1]), (item[0], item[1])) <= 0:
+            hull.pop()
+        hull.append(item)
+
+    lower: list[tuple[float, float, dict[str, Any]]] = []
+    for item in pts:
+        _push(lower, item)
+    upper: list[tuple[float, float, dict[str, Any]]] = []
+    for item in reversed(pts):
+        _push(upper, item)
+    merged = lower[:-1] + upper[:-1]
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    for item in merged:
+        pid = item[2]["id"]
+        if pid in seen:
+            continue
+        seen.add(pid)
+        out.append(item[2])
+    return out if out else list(pois)
+
+
+def diameter_pairwise_km(pois: list[dict[str, Any]]) -> float:
     if len(pois) < 2:
         return 0.0
     best = 0.0
     for i in range(len(pois)):
+        pi = pois[i]
         for j in range(i + 1, len(pois)):
-            d = haversine_km(pois[i]["lat"], pois[i]["lon"], pois[j]["lat"], pois[j]["lon"])
+            d = haversine_km(pi["lat"], pi["lon"], pois[j]["lat"], pois[j]["lon"])
             if d > best:
                 best = d
     return best
+
+
+def diameter_km(
+    pois: list[dict[str, Any]],
+    pairwise_max_n: int = PAIRWISE_DIAMETER_MAX_N,
+) -> float:
+    """Exact haversine diameter. Pairwise if n is small; else pairwise on convex hull."""
+    n = len(pois)
+    if n < 2:
+        return 0.0
+    if n <= pairwise_max_n:
+        return diameter_pairwise_km(pois)
+    hull = _convex_hull_pois(pois)
+    return diameter_pairwise_km(hull)
+
+
+def _diameter_km(pois: list[dict[str, Any]]) -> float:
+    return diameter_km(pois)
 
 
 def build_place(
@@ -204,33 +302,107 @@ def build_place(
     }
 
 
+def _parse_hub_ids(raw: Any) -> list[str] | None:
+    if isinstance(raw, list):
+        return [str(x) for x in raw]
+    if not isinstance(raw, str):
+        return None
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(parsed, list):
+        return None
+    return [str(x) for x in parsed]
+
+
+def _cluster_row_same(
+    row: sqlite3.Row,
+    hub_ids: list[str],
+    title: str,
+    center_lat: float,
+    center_lon: float,
+) -> bool:
+    stored_ids = _parse_hub_ids(row["hub_ids"])
+    if stored_ids != hub_ids:
+        return False
+    if (row["title"] or "") != title:
+        return False
+    plat = row["center_lat"]
+    plon = row["center_lon"]
+    if plat is None or plon is None:
+        return False
+    return abs(float(plat) - center_lat) <= _CENTER_EPS and abs(float(plon) - center_lon) <= _CENTER_EPS
+
+
 def persist_clusters(
     conn: sqlite3.Connection,
     places: list[dict[str, Any]],
     radius_km: int,
-) -> None:
-    """Write live discs so POST /api/price can load the clicked cluster_id."""
+    cap: int | None = None,
+) -> int:
+    """Write live discs so POST /api/price can load the clicked cluster_id.
+
+    Writes ranked[:cap] plus any ranked cluster already stored for this radius.
+    INSERT OR REPLACE only when the row is missing or hub_ids/title/center changed.
+    """
+    radius_i = int(radius_km)
+    if cap is None:
+        cap = len(places)
+    else:
+        cap = max(0, int(cap))
+    existing_rows = conn.execute(
+        "SELECT id, hub_ids, title, center_lat, center_lon FROM cluster WHERE radius_km = ?",
+        (radius_i,),
+    ).fetchall()
+    existing = {str(r["id"]): r for r in existing_rows}
+    chosen: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for place in places[:cap]:
+        cid = place["cluster_id"]
+        if cid in seen:
+            continue
+        seen.add(cid)
+        chosen.append(place)
+    if cap < len(places):
+        for place in places[cap:]:
+            cid = place["cluster_id"]
+            if cid in seen:
+                continue
+            if cid in existing:
+                seen.add(cid)
+                chosen.append(place)
     sql = (
         "INSERT OR REPLACE INTO cluster("
         "id, radius_km, hub_ids, title, center_lat, center_lon, diameter_km, ingredient_mask"
         ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
-    for place in places:
+    writes = 0
+    for place in chosen:
         hub_ids = [h["hub_id"] for h in place["hubs"]]
+        title = place.get("title") or ""
+        clat = float(place["center"]["lat"])
+        clon = float(place["center"]["lon"])
+        prev = existing.get(place["cluster_id"])
+        if prev is not None and _cluster_row_same(prev, hub_ids, title, clat, clon):
+            continue
         conn.execute(
             sql,
             (
                 place["cluster_id"],
-                int(radius_km),
+                radius_i,
                 json.dumps(hub_ids, ensure_ascii=False),
-                place.get("title") or "",
-                float(place["center"]["lat"]),
-                float(place["center"]["lon"]),
+                title,
+                clat,
+                clon,
                 float(place.get("diameter_km") or 0.0),
                 json.dumps(place.get("coverage") or {}, ensure_ascii=True),
             ),
         )
-    conn.commit()
+        writes += 1
+    if writes:
+        conn.commit()
+    return writes
 
 
 def list_places(
@@ -241,12 +413,36 @@ def list_places(
 ) -> dict[str, Any]:
     hubs = load_hubs(conn)
     pois = load_pois(conn)
+    burger = set(ingredients)
+    indexed = index_pois_by_hub([p for p in pois if p["ingredient_id"] in burger])
     raw: list[dict[str, Any]] = []
     for hub_set in iter_candidates(hubs, float(radius_km)):
-        place = build_place(hub_set, pois, ingredients, radius_km)
+        place = build_place(hub_set, pois_for_hubs(indexed, hub_set), ingredients, radius_km)
         if place is not None:
             raw.append(place)
     ranked = rank_places(raw, ingredients, radius_km)
-    persist_clusters(conn, ranked, radius_km)
     cap = max(0, int(limit))
+    persist_clusters(conn, ranked, radius_km, cap=cap)
     return {"total_found": len(ranked), "places": ranked[:cap]}
+
+
+def benchmark_list_places(
+    conn: sqlite3.Connection,
+    ingredients: list[str],
+    radius_km: int,
+    limit: int = DEFAULT_LIMIT,
+) -> dict[str, Any]:
+    """Time list_places on the open connection. For golden fixtures, not live 8MB db."""
+    hubs = load_hubs(conn)
+    pois = load_pois(conn)
+    n_cand = len(iter_candidates(hubs, float(radius_km)))
+    t0 = time.perf_counter()
+    out = list_places(conn, ingredients, radius_km, limit)
+    ms = (time.perf_counter() - t0) * 1000.0
+    return {
+        "hubs": len(hubs),
+        "pois": len(pois),
+        "candidates": n_cand,
+        "ms": round(ms, 3),
+        "total_found": out["total_found"],
+    }
