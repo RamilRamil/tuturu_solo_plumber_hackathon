@@ -221,7 +221,8 @@ class PriceApiTests(unittest.TestCase):
         self.assertGreater(first_leg["price"], 0)
         done = events[-1][1]
         self.assertEqual(done["price_status"], PRICE_STATUS)
-        self.assertEqual(done["price_status"], "fixture-confirmed")
+        self.assertEqual(done["price_status"], "fixture")
+        self.assertNotEqual(done["price_status"], "fixture-confirmed")
 
     def test_uglich_sse_warning_no_fake_fares(self) -> None:
         status, headers, body = self._price(self.uglich_id)
@@ -245,9 +246,10 @@ class PriceApiTests(unittest.TestCase):
             self.assertTrue(brs)
             self.assertGreater(brs[0]["transport"], 0)
         self.assertEqual(events[-1][1]["cluster_id"], self.uglich_id)
-        self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+        self.assertEqual(events[-1][1]["price_status"], "fixture")
 
-    def test_fixture_confirmed_not_sc_price_4342(self) -> None:
+    def test_fixture_status_not_sc_price_4342(self) -> None:
+        os.environ["BURGER_SC_PRICE_ACCEPTED"] = "1"
         status, _headers, body = self._price(
             self.priced_id, budget_scope="all"
         )
@@ -255,8 +257,10 @@ class PriceApiTests(unittest.TestCase):
         events = _parse_sse(body)
         brs = [p for n, p in events if n == "breakdown"]
         self.assertTrue(brs)
-        self.assertEqual(brs[0]["price_status"], "fixture-confirmed")
-        self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+        self.assertEqual(brs[0]["price_status"], "fixture")
+        self.assertNotEqual(brs[0]["price_status"], "live")
+        self.assertEqual(events[-1][1]["price_status"], "fixture")
+        self.assertNotEqual(events[-1][1]["price_status"], "fixture-confirmed")
 
     def test_hotel_stay_total_not_times_nights(self) -> None:
         status, _headers, body = self._price(
@@ -451,7 +455,7 @@ class PriceApiTests(unittest.TestCase):
             for leg in legs:
                 self.assertGreater(leg["price"], 0)
                 self.assertEqual(leg["source"], "cache")
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertEqual(events[-1][1]["price_status"], "cache")
             codes = [p["code"] for n, p in events if n == "warning"]
             self.assertIn("cache_fallback", codes)
             self.assertNotIn("no_price", codes)
@@ -471,7 +475,7 @@ class PriceApiTests(unittest.TestCase):
             self.assertTrue(all(p["source"] == "cache" for p in legs))
             codes = [p["code"] for n, p in events if n == "warning"]
             self.assertNotIn("cache_fallback", codes)
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertEqual(events[-1][1]["price_status"], "fixture")
         finally:
             mcp.close()
 
@@ -488,14 +492,22 @@ class PriceApiTests(unittest.TestCase):
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             self.assertTrue(all(p["source"] == "cache" for p in legs))
-            codes = [p["code"] for n, p in events if n == "warning"]
+            warnings = [p for n, p in events if n == "warning"]
+            codes = [p["code"] for p in warnings]
             self.assertIn("cache_fallback", codes)
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            fallbacks = [p for p in warnings if p["code"] == "cache_fallback"]
+            self.assertTrue(fallbacks)
+            for w in fallbacks:
+                self.assertNotEqual(w["message"], "cache_fallback")
+                self.assertIn("live search failed", w["message"])
+                self.assertIn("TimeoutError", w["message"])
+            self.assertEqual(events[-1][1]["price_status"], "cache")
+            self.assertNotEqual(events[-1][1]["price_status"], "live")
         finally:
             mcp.close()
             os.environ.pop("BURGER_LIVE_TUTU", None)
 
-    def test_live_priced_hop_stays_fixture_confirmed(self) -> None:
+    def test_live_priced_hop_overall_status_live(self) -> None:
         os.environ["BURGER_LIVE_TUTU"] = "1"
         os.environ.pop("BURGER_SC_PRICE_ACCEPTED", None)
         mcp = open_mcp(self.db_path)
@@ -536,12 +548,14 @@ class PriceApiTests(unittest.TestCase):
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             self.assertTrue(any(p["source"] == "live" for p in legs))
+            self.assertTrue(all(p["source"] == "live" for p in legs))
             for leg in legs:
                 self.assertGreater(leg["price"], 0)
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertEqual(events[-1][1]["price_status"], "live")
+            self.assertNotEqual(events[-1][1]["price_status"], "fixture-confirmed")
             brs = [p for n, p in events if n == "breakdown"]
             self.assertTrue(brs)
-            self.assertEqual(brs[0]["price_status"], "fixture-confirmed")
+            self.assertEqual(brs[0]["price_status"], "live")
             checkouts = [p for n, p in events if n == "checkout"]
             self.assertTrue(checkouts)
             urls = [it["checkout_url"] for it in checkouts[0]["items"]]
@@ -638,7 +652,152 @@ class PriceApiTests(unittest.TestCase):
             self.assertTrue(legs)
             self.assertTrue(any(p["source"] == "live" for p in legs))
             self.assertTrue(all(p["price"] != 10 for p in legs if p["source"] == "live"))
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertEqual(events[-1][1]["price_status"], "live")
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    def test_overall_status_mixed_when_one_live_one_cache(self) -> None:
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        os.environ.pop("BURGER_SC_PRICE_ACCEPTED", None)
+        mcp = open_mcp(self.db_path)
+        calls = {"n": 0}
+        try:
+            geo_to_id = {}
+            for row in mcp.conn.execute("SELECT * FROM hub"):
+                geo_to_id[row["tutu_geo_id"] or ""] = row["id"]
+            mow = geo_to_id.get("fixture-mow")
+            yar = geo_to_id.get("fixture-yar")
+            self.assertTrue(mow and yar)
+            return_day = add_days(first_window_start(self.etalon["month"]), max(0, int(self.etalon["days"]) - 1))
+            mcp.conn.execute(
+                """
+                INSERT OR REPLACE INTO leg(
+                  origin_hub, dest_hub, date_probed, modes, min_price,
+                  duration_min, latency_ms, checked_at, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    yar,
+                    mow,
+                    return_day,
+                    "railway",
+                    500,
+                    None,
+                    1,
+                    "2026-08-19T00:00:00Z",
+                    "ok",
+                ),
+            )
+            mcp.conn.commit()
+
+            def fake(_name: str, args: dict) -> dict:
+                calls["n"] += 1
+                if calls["n"] > 1:
+                    raise TimeoutError("tutu timeout")
+                dest = str(args.get("destination") or "")
+                region = ""
+                rname = dest or "x"
+                for row in mcp.conn.execute("SELECT * FROM hub"):
+                    names = [row["name"] or "", row["resolved_name"] or ""]
+                    if dest in names or any(dest.startswith(n) for n in names if n):
+                        region = row["resolved_region"] or row["expected_region"] or row["subject"]
+                        rname = row["resolved_name"] or row["name"]
+                        break
+                body = {
+                    "meta": {"to": {"name": rname, "region": region or "x"}},
+                    "variants": [
+                        {
+                            "transport": "railway",
+                            "price": {"amount": 1200},
+                            "duration_min": 180,
+                            "checkout_url": "https://www.tutu.ru/live-mixed",
+                        }
+                    ],
+                }
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(body, ensure_ascii=True)}]
+                    }
+                }
+
+            mcp.call_tool = fake  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
+            legs = [p for n, p in events if n == "leg"]
+            sources = [p["source"] for p in legs]
+            self.assertIn("live", sources)
+            self.assertIn("cache", sources)
+            self.assertEqual(events[-1][1]["price_status"], "mixed")
+            brs = [p for n, p in events if n == "breakdown"]
+            self.assertTrue(brs)
+            self.assertEqual(brs[0]["price_status"], "mixed")
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    def test_create_checkout_link_when_ref_without_url(self) -> None:
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        os.environ.pop("BURGER_SC_PRICE_ACCEPTED", None)
+        mcp = open_mcp(self.db_path)
+        tool_url = "https://mtp-deeplink.tutu.ru/api/v1/deeplink/explicit/train?hash=abc%2Bdef&x=1"
+        seen = {"create": 0, "args": []}
+        try:
+            def fake(name: str, args: dict) -> dict:
+                if name == "create_checkout_link":
+                    seen["create"] += 1
+                    seen["args"].append(dict(args))
+                    body = {"checkout_url": tool_url, "kind": "deeplink"}
+                    return {
+                        "result": {
+                            "content": [
+                                {"type": "text", "text": json.dumps(body, ensure_ascii=True)}
+                            ]
+                        }
+                    }
+                dest = str(args.get("destination") or "")
+                region = ""
+                rname = dest or "x"
+                for row in mcp.conn.execute("SELECT * FROM hub"):
+                    names = [row["name"] or "", row["resolved_name"] or ""]
+                    if dest in names or any(dest.startswith(n) for n in names if n):
+                        region = row["resolved_region"] or row["expected_region"] or row["subject"]
+                        rname = row["resolved_name"] or row["name"]
+                        break
+                body = {
+                    "meta": {"to": {"name": rname, "region": region or "x"}},
+                    "variants": [
+                        {
+                            "transport": "railway",
+                            "price": {"amount": 1200},
+                            "duration_min": 180,
+                            "checkout_ref": {
+                                "transport": "railway",
+                                "offer_hash": "opaque-ref",
+                            },
+                        }
+                    ],
+                }
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(body, ensure_ascii=True)}]
+                    }
+                }
+
+            mcp.call_tool = fake  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
+            self.assertGreater(seen["create"], 0)
+            self.assertTrue(any("offer_hash" in a for a in seen["args"]))
+            checkouts = [p for n, p in events if n == "checkout"]
+            self.assertTrue(checkouts)
+            urls = [it["checkout_url"] for it in checkouts[0]["items"]]
+            self.assertTrue(urls)
+            self.assertTrue(all(u == tool_url for u in urls))
+            self.assertIn(tool_url, urls)
+            self.assertEqual(events[-1][1]["price_status"], "live")
         finally:
             mcp.close()
             os.environ.pop("BURGER_LIVE_TUTU", None)
@@ -831,7 +990,9 @@ class PriceApiTests(unittest.TestCase):
             events = _parse_sse(body)
             self.assertEqual(events[0][0], "resolved")
             self.assertEqual(events[-1][0], "done")
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertIn(events[-1][1]["price_status"], ("live", "mixed", "cache"))
+            self.assertNotEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            self.assertNotEqual(events[-1][1]["price_status"], "fixture")
             codes = [p["code"] for n, p in events if n == "warning"]
             self.assertTrue("no_route" in codes or "not_sellable" in codes, codes)
             for _n, payload in events:
@@ -843,8 +1004,8 @@ class PriceApiTests(unittest.TestCase):
             events = _parse_sse(body)
             self.assertEqual(events[0][0], "resolved")
             self.assertEqual(events[-1][0], "done")
-            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
-            self.assertNotEqual(events[-1][1]["price_status"], "live")
+            self.assertIn(events[-1][1]["price_status"], ("live", "mixed", "cache"))
+            self.assertNotEqual(events[-1][1]["price_status"], "fixture-confirmed")
             legs = [p for n, p in events if n == "leg"]
             self.assertTrue(legs)
             for leg in legs:

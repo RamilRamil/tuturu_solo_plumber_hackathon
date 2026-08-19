@@ -25,13 +25,14 @@ from lib.tutu_mcp import (
     unwrap_tool_result,
 )
 
-PRICE_STATUS = "fixture-confirmed"
+PRICE_STATUS = "fixture"
 CURRENCY = "RUB"
 FIRST_LEG_PAUSE_S = 3.0
 EVENT_PAUSE_S = 1.0
 DEFAULT_DB = "data/burger.db"
 ASCII_ORIGIN_GEO = {"moscow": "fixture-mow", "moskva": "fixture-mow"}
 _TRUTHY = ("1", "true", "yes", "on")
+_AVIA_MODES = ("avia", "air", "flight")
 
 
 class UnknownCluster(Exception):
@@ -63,9 +64,30 @@ def demo_pace_enabled() -> bool:
     return _env_flag("BURGER_PRICE_DEMO_PACE")
 
 
-def overall_price_status() -> str:
-    """Overall status is live only when BURGER_SC_PRICE_ACCEPTED is set."""
-    return "live" if sc_price_accepted() else PRICE_STATUS
+def overall_price_status(sources: list[str], live_on: bool) -> str:
+    """Overall label from emitted hop/hotel sources. Not an env lookup.
+
+    BURGER_SC_PRICE_ACCEPTED is a demo-acceptance gate (healthz/boot only).
+    """
+    priced = [s for s in sources if s in ("live", "cache")]
+    if not priced:
+        return "cache" if live_on else "fixture"
+    has_live = any(s == "live" for s in priced)
+    has_cache = any(s == "cache" for s in priced)
+    if has_live and has_cache:
+        return "mixed"
+    if has_live:
+        return "live"
+    return "cache" if live_on else "fixture"
+
+
+def live_fail_message(exc: Optional[BaseException] = None, issue: Optional[str] = None) -> str:
+    """ASCII cache_fallback message; never the bare code token."""
+    if exc is not None:
+        return "live search failed (" + type(exc).__name__ + ")"
+    if issue:
+        return "live search failed (" + issue + ")"
+    return "live search failed"
 
 
 def open_mcp(path: Optional[str] = None) -> TutuMcp:
@@ -288,6 +310,94 @@ def checkout_url_from_obj(obj: Any) -> Optional[str]:
     return None
 
 
+def checkout_ref_from_obj(obj: Any) -> dict[str, Any]:
+    if not isinstance(obj, dict):
+        return {}
+    ref = obj.get("checkout_ref")
+    if isinstance(ref, dict) and ref:
+        return dict(ref)
+    best = obj.get("best_offer")
+    if isinstance(best, dict):
+        nested = best.get("checkout_ref")
+        if isinstance(nested, dict) and nested:
+            return dict(nested)
+    return {}
+
+
+def checkout_url_from_tool_payload(payload: Any) -> Optional[str]:
+    doc = unwrap_tool_result(payload)
+    if isinstance(doc, dict):
+        url = doc.get("checkout_url")
+        if isinstance(url, str) and url:
+            return url
+    return checkout_url_from_obj(doc) if isinstance(doc, dict) else None
+
+
+def _is_avia_ref(ref: dict[str, Any], mode: str) -> bool:
+    product = str(ref.get("product_type") or ref.get("transport") or mode or "")
+    return product.strip().lower() in _AVIA_MODES
+
+
+def checkout_link_args(
+    ref: dict[str, Any],
+    mode: str = "",
+    adults: int = 1,
+    children_ages: Optional[list[int]] = None,
+) -> dict[str, Any]:
+    args = dict(ref)
+    if not _is_avia_ref(args, mode):
+        return args
+    ages = list(children_ages or [])
+    if "passengers_full" not in args:
+        args["passengers_full"] = adults
+    if "child" not in args:
+        args["child"] = len([a for a in ages if a >= 2])
+    if "infant" not in args:
+        args["infant"] = len([a for a in ages if a < 2])
+    return args
+
+
+def resolve_checkout_url(
+    mcp: TutuMcp,
+    url: Optional[str],
+    ref: Any,
+    mode: str = "",
+    adults: int = 1,
+    children_ages: Optional[list[int]] = None,
+) -> Optional[str]:
+    """Use existing checkout_url, else create_checkout_link from opaque ref.
+
+    Returns the tool string exactly. Search only; never books.
+    """
+    if isinstance(url, str) and url:
+        return url
+    if not isinstance(ref, dict) or not ref:
+        return None
+    args = checkout_link_args(ref, mode=mode, adults=adults, children_ages=children_ages)
+    try:
+        raw = mcp.call_tool("create_checkout_link", args)
+    except Exception:
+        return None
+    return checkout_url_from_tool_payload(raw)
+
+
+def hotel_checkout_bits(hotel_doc: dict[str, Any]) -> tuple[Optional[str], dict[str, Any]]:
+    url = checkout_url_from_obj(hotel_doc)
+    ref = checkout_ref_from_obj(hotel_doc)
+    hotels = hotel_doc.get("hotels")
+    if isinstance(hotels, list):
+        for item in hotels:
+            if not isinstance(item, dict):
+                continue
+            if url is None:
+                url = checkout_url_from_obj(item)
+            if not ref:
+                ref = checkout_ref_from_obj(item)
+            if url or ref:
+                break
+    return url, ref
+
+
 def payload_offers(doc: Any) -> list[dict[str, Any]]:
     if not isinstance(doc, dict):
         return []
@@ -386,8 +496,8 @@ def live_hop_quote(
     to: sqlite3.Row,
     day: str,
     adults: int,
-) -> tuple[Optional[dict[str, Any]], Optional[str]]:
-    """Search one directed hop. Returns (quote, issue_code). Never books."""
+) -> tuple[Optional[dict[str, Any]], Optional[str], str]:
+    """Search one directed hop. Returns (quote, issue_code, fallback_detail). Never books."""
     try:
         outcome = mcp.probe_destination(
             origin=query_city(frm),
@@ -397,8 +507,8 @@ def live_hop_quote(
             departure_date=day,
             adults=adults,
         )
-    except Exception:
-        return None, "cache_fallback"
+    except Exception as exc:
+        return None, "cache_fallback", live_fail_message(exc=exc)
     doc = outcome.payload if isinstance(outcome.payload, dict) else {}
     try:
         meta = extract_meta(doc) if doc else {}
@@ -416,18 +526,18 @@ def live_hop_quote(
             to["expected_region"] or to["subject"] or "",
         )
         if outcome.status == "misresolved" or not ok:
-            return None, "misresolved"
+            return None, "misresolved", ""
         quote = quote_from_route_doc(doc, day, "live")
         if quote is None:
             offers = payload_offers(doc)
             if outcome.status == "not_sellable":
-                return None, "not_sellable"
+                return None, "not_sellable", ""
             if not offers:
-                return None, "no_route"
-            return None, "no_price"
-        return quote, None
-    except Exception:
-        return None, "cache_fallback"
+                return None, "no_route", ""
+            return None, "no_price", ""
+        return quote, None, ""
+    except Exception as exc:
+        return None, "cache_fallback", live_fail_message(exc=exc)
 
 
 def exact_cache_quote(
@@ -480,7 +590,7 @@ def live_hotel_payload(
     check_out: str,
     adults: int,
     children_ages: Optional[list[int]] = None,
-) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+) -> tuple[Optional[dict[str, Any]], Optional[str], str]:
     args: dict[str, Any] = {
         "city_name": query_city(hub),
         "check_in": check_in,
@@ -491,31 +601,34 @@ def live_hotel_payload(
         args["children_ages"] = list(children_ages)
     try:
         raw = mcp.call_tool("search_hotels", args)
-    except Exception:
-        return None, "cache_fallback"
-    doc = unwrap_tool_result(raw)
-    if not isinstance(doc, dict):
-        return None, "no_hotel"
-    meta = extract_meta(doc)
-    geo = {}
-    if isinstance(doc.get("meta"), dict):
-        maybe = doc["meta"].get("resolved_geo")
-        if isinstance(maybe, dict):
-            geo = maybe
-    if geo:
-        meta = {"to": {"name": geo.get("name") or "", "region": geo.get("region") or ""}}
-    if meta:
-        ok, _reason = check_resolve(
-            meta,
-            hub["name"],
-            hub["expected_region"] or hub["subject"] or "",
-        )
-        if not ok:
-            return None, "misresolved"
-    amount = stay_total_from_hotel_payload(doc)
-    if amount is None:
-        return None, "no_hotel"
-    return doc, None
+    except Exception as exc:
+        return None, "cache_fallback", live_fail_message(exc=exc)
+    try:
+        doc = unwrap_tool_result(raw)
+        if not isinstance(doc, dict):
+            return None, "no_hotel", ""
+        meta = extract_meta(doc)
+        geo = {}
+        if isinstance(doc.get("meta"), dict):
+            maybe = doc["meta"].get("resolved_geo")
+            if isinstance(maybe, dict):
+                geo = maybe
+        if geo:
+            meta = {"to": {"name": geo.get("name") or "", "region": geo.get("region") or ""}}
+        if meta:
+            ok, _reason = check_resolve(
+                meta,
+                hub["name"],
+                hub["expected_region"] or hub["subject"] or "",
+            )
+            if not ok:
+                return None, "misresolved", ""
+        amount = stay_total_from_hotel_payload(doc)
+        if amount is None:
+            return None, "no_hotel", ""
+        return doc, None, ""
+    except Exception as exc:
+        return None, "cache_fallback", live_fail_message(exc=exc)
 
 
 def pick_mode(modes: str) -> str:
@@ -601,10 +714,11 @@ def warn_code(
     from_hub: str,
     to_hub: str,
     recovered: bool = False,
+    message: Optional[str] = None,
 ) -> dict[str, Any]:
     return warning_event(
         code,
-        WARN_MESSAGES.get(code, code),
+        message if message else WARN_MESSAGES.get(code, code),
         hub_id=hub_id,
         from_hub=from_hub,
         to_hub=to_hub,
@@ -620,26 +734,29 @@ def quote_directed_hop(
     adults: int,
     live_on: bool,
     sig: str = "",
-) -> tuple[Optional[dict[str, Any]], Optional[str], bool]:
+) -> tuple[Optional[dict[str, Any]], Optional[str], bool, str]:
     live_issue: Optional[str] = None
+    live_detail = ""
     if live_on:
-        quote, live_issue = live_hop_quote(mcp, frm, to, day, adults)
+        quote, live_issue, live_detail = live_hop_quote(mcp, frm, to, day, adults)
         if quote is not None:
-            return quote, None, False
+            return quote, None, False, ""
     exact = exact_cache_quote(mcp.conn, frm, to, day, adults, sig)
     if exact is not None:
         if live_on and live_issue is not None:
-            return exact, "cache_fallback", True
-        return exact, None, False
+            msg = live_detail or live_fail_message(issue=live_issue)
+            return exact, "cache_fallback", True, msg
+        return exact, None, False, ""
     quote, stale_issue = stale_leg_quote(mcp.conn, frm, to, day)
     if quote is not None:
         if live_on and live_issue is not None:
-            return quote, "cache_fallback", True
-        return quote, "stale_leg", True
+            msg = live_detail or live_fail_message(issue=live_issue)
+            return quote, "cache_fallback", True, msg
+        return quote, "stale_leg", True, ""
     issue = stale_issue or live_issue or "no_route"
     if issue == "cache_fallback":
         issue = stale_issue or "no_route"
-    return None, issue, False
+    return None, issue, False, live_detail
 
 
 def _cancelled(cancel: Optional[Event]) -> bool:
@@ -729,14 +846,14 @@ def iter_price_events(
             warning_event("misresolved", "guard rejected origin"),
         )
 
-    status = overall_price_status()
+    live_on = live_tutu_enabled()
     if origin_row is None or origin_guard != "ok":
         yield (
             "done",
             {
                 "ok": True,
                 "cluster_id": req["cluster_id"],
-                "price_status": status,
+                "price_status": overall_price_status([], live_on),
             },
         )
         return
@@ -756,8 +873,8 @@ def iter_price_events(
     transport_total = 0
     lodging_total = 0
     checkout_items: list[dict[str, Any]] = []
+    hop_sources: list[str] = []
     first_leg_sent = False
-    live_on = live_tutu_enabled()
     adults = int(req["adults"])
     hops: list[tuple[sqlite3.Row, sqlite3.Row, str]] = []
     current = origin_row
@@ -778,6 +895,8 @@ def iter_price_events(
             return
         transport_total += price
         priced = True
+        src = quote.get("source") or "cache"
+        hop_sources.append(src)
         payload: dict[str, Any] = {
             "from_hub": frm_h["id"],
             "to_hub": to_h["id"],
@@ -790,13 +909,20 @@ def iter_price_events(
             "duration_min": quote.get("duration_min"),
             "date": quote.get("date"),
             "checkout_ref": quote.get("checkout_ref") or {},
-            "source": quote.get("source") or "cache",
+            "source": src,
         }
         if quote.get("stale"):
             payload["stale"] = True
         yield ("leg", payload)
         first_leg_sent = True
-        url = quote.get("checkout_url")
+        url = resolve_checkout_url(
+            mcp,
+            quote.get("checkout_url"),
+            quote.get("checkout_ref") or {},
+            mode=str(payload["mode"] or ""),
+            adults=adults,
+            children_ages=children_ages,
+        )
         if isinstance(url, str) and url:
             checkout_items.append(
                 {
@@ -819,11 +945,11 @@ def iter_price_events(
         if dest_guard != "ok" and to["id"] != origin_row["id"]:
             continue
 
-        quote, issue, _used_fb = quote_directed_hop(
+        quote, issue, _used_fb, fb_detail = quote_directed_hop(
             mcp, frm, to, day, adults, live_on, sig
         )
         if is_return and quote is None and prev_city is not None and prev_city["id"] != frm["id"]:
-            fb_quote, fb_issue, _fb_used = quote_directed_hop(
+            fb_quote, fb_issue, _fb_used, fb_ret_detail = quote_directed_hop(
                 mcp, prev_city, origin_row, day, adults, live_on, sig
             )
             if fb_quote is not None:
@@ -840,11 +966,18 @@ def iter_price_events(
                 if fb_issue in ("cache_fallback", "stale_leg"):
                     yield (
                         "warning",
-                        warn_code(fb_issue, to["id"], prev_city["id"], to["id"]),
+                        warn_code(
+                            fb_issue,
+                            to["id"],
+                            prev_city["id"],
+                            to["id"],
+                            message=fb_ret_detail or None,
+                        ),
                     )
                 frm = prev_city
                 quote = fb_quote
                 issue = fb_issue
+                fb_detail = fb_ret_detail
             else:
                 yield (
                     "warning",
@@ -864,7 +997,13 @@ def iter_price_events(
         if issue in ("cache_fallback", "stale_leg"):
             yield (
                 "warning",
-                warn_code(issue, to["id"], frm["id"], to["id"]),
+                warn_code(
+                    issue,
+                    to["id"],
+                    frm["id"],
+                    to["id"],
+                    message=fb_detail or None,
+                ),
             )
 
         yield from emit_leg(frm, to, quote)
@@ -885,8 +1024,9 @@ def iter_price_events(
             hotel_doc: Optional[dict[str, Any]] = None
             hotel_source = "cache"
             live_hotel_issue: Optional[str] = None
+            live_hotel_detail = ""
             if live_on:
-                hotel_doc, live_hotel_issue = live_hotel_payload(
+                hotel_doc, live_hotel_issue, live_hotel_detail = live_hotel_payload(
                     mcp, h, check_in, check_out, adults, children_ages
                 )
                 if hotel_doc is not None:
@@ -904,9 +1044,16 @@ def iter_price_events(
                 hotel_doc = json.loads(cached_h["payload_json"])
                 hotel_source = "cache"
                 if live_on and live_hotel_issue is not None:
+                    msg = live_hotel_detail or live_fail_message(issue=live_hotel_issue)
                     yield (
                         "warning",
-                        warn_code("cache_fallback", h["id"], "", ""),
+                        warn_code(
+                            "cache_fallback",
+                            h["id"],
+                            "",
+                            "",
+                            message=msg,
+                        ),
                     )
             amount = stay_total_from_hotel_payload(hotel_doc)
             if amount is None:
@@ -918,13 +1065,12 @@ def iter_price_events(
             nights = nights_from_hotel_payload(hotel_doc, 1)
             lodging_total += amount
             priced = True
+            hop_sources.append(hotel_source)
             city_meta = {}
             if isinstance(hotel_doc.get("meta"), dict):
                 city_meta = hotel_doc["meta"].get("resolved_geo") or {}
             city = city_meta.get("name") if isinstance(city_meta, dict) else None
-            href = hotel_doc.get("checkout_ref") or {}
-            if not isinstance(href, dict):
-                href = {}
+            h_url, href = hotel_checkout_bits(hotel_doc)
             hotel_event = {
                 "hub_id": h["id"],
                 "city": city or h["resolved_name"] or h["name"],
@@ -936,7 +1082,14 @@ def iter_price_events(
                 "source": hotel_source,
             }
             yield ("hotel", hotel_event)
-            h_url = checkout_url_from_obj(hotel_doc)
+            h_url = resolve_checkout_url(
+                mcp,
+                h_url,
+                href,
+                mode="hotels",
+                adults=adults,
+                children_ages=children_ages,
+            )
             if h_url:
                 checkout_items.append(
                     {
@@ -947,6 +1100,7 @@ def iter_price_events(
                     }
                 )
 
+    status = overall_price_status(hop_sources, live_on)
     if priced:
         lodging = lodging_total if budget == "all" else 0
         total = transport_total + lodging
