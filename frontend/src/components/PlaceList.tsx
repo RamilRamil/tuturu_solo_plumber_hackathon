@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { PlaceCard } from "./PlaceCard";
 import type { CardState, Place } from "../types/contract";
 
@@ -21,6 +22,15 @@ export function PlaceList({
   const top = places.slice(0, 5);
   const rest = places.slice(5);
   const idle = { grey: false, reason: null, code: null } as CardState;
+  const [showRest, setShowRest] = useState(false);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const hidden = places.slice(5);
+    if (hidden.some((place) => place.cluster_id === selectedId)) {
+      setShowRest(true);
+    }
+  }, [selectedId, places]);
 
   return (
     <div className="place-list">
@@ -43,18 +53,23 @@ export function PlaceList({
         />
       ))}
       {rest.length > 0 ? (
-        <section className="more-places">
-          <h3>Ещё места</h3>
-          {rest.map((place) => (
-            <PlaceCard
-              key={place.cluster_id}
-              place={place}
-              selected={selectedId === place.cluster_id}
-              state={cardState[place.cluster_id] ?? idle}
-              onSelect={onSelect}
-            />
-          ))}
-        </section>
+        <div className="more-places">
+          {showRest ? (
+            rest.map((place) => (
+              <PlaceCard
+                key={place.cluster_id}
+                place={place}
+                selected={selectedId === place.cluster_id}
+                state={cardState[place.cluster_id] ?? idle}
+                onSelect={onSelect}
+              />
+            ))
+          ) : (
+            <button type="button" className="show-more" onClick={() => setShowRest(true)}>
+              Показать ещё ({rest.length})
+            </button>
+          )}
+        </div>
       ) : null}
     </div>
   );

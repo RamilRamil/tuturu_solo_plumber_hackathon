@@ -19,10 +19,10 @@ function poiDisplayName(name: unknown): string {
 }
 
 function hoursLabel(status: string, openingHours: string | null): string {
-  if (!openingHours) return "неизвестно";
+  if (!openingHours) return "";
   if (status === "open") return "открыт";
   if (status === "closed") return "закрыт";
-  return "неизвестно";
+  return "";
 }
 
 function hubExtra(probeStatus: string): string {
@@ -140,11 +140,6 @@ export function ClusterMap({ place }: Props) {
     };
   }, [place]);
 
-  const objectTotal = place?.objects.length ?? 0;
-  const namedCount = place
-    ? place.objects.filter((obj) => isNamedPoi(obj.name)).length
-    : 0;
-
   return (
     <section className="map-wrap">
       <h2>{place ? place.title : "Карта"}</h2>
@@ -153,11 +148,6 @@ export function ClusterMap({ place }: Props) {
           ? "Хабы и объекты выбранного кластера. Цен нет - это ещё не маршрут."
           : "Выберите карточку - на карте появятся точки кластера."}
       </p>
-      {place && objectTotal > 0 ? (
-        <p className="objects-count">
-          {namedCount} of {objectTotal} named
-        </p>
-      ) : null}
       <div ref={rootRef} className="map" />
     </section>
   );
