@@ -10,6 +10,14 @@ type Props = {
 
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
+function isNamedPoi(name: unknown): boolean {
+  return typeof name === "string" && name.trim().length > 0;
+}
+
+function poiDisplayName(name: unknown): string {
+  return typeof name === "string" ? name.trim() : "";
+}
+
 function hoursLabel(status: string, openingHours: string | null): string {
   if (!openingHours) return "неизвестно";
   if (status === "open") return "открыт";
@@ -51,16 +59,18 @@ export function ClusterMap({ place }: Props) {
 
     const apply = () => {
       const objectFeatures = place
-        ? place.objects.map((obj) => ({
-            type: "Feature" as const,
-            properties: {
-              kind: "poi",
-              name: obj.name,
-              extra: INGREDIENT_NAME_RU[obj.ingredient] ?? obj.ingredient,
-              hours: hoursLabel(obj.hours_status, obj.opening_hours),
-            },
-            geometry: { type: "Point" as const, coordinates: [obj.lon, obj.lat] },
-          }))
+        ? place.objects
+            .filter((obj) => isNamedPoi(obj.name))
+            .map((obj) => ({
+              type: "Feature" as const,
+              properties: {
+                kind: "poi",
+                name: poiDisplayName(obj.name),
+                extra: INGREDIENT_NAME_RU[obj.ingredient] ?? obj.ingredient,
+                hours: hoursLabel(obj.hours_status, obj.opening_hours),
+              },
+              geometry: { type: "Point" as const, coordinates: [obj.lon, obj.lat] },
+            }))
         : [];
       const hubFeatures = place
         ? place.hubs.map((hub) => ({
@@ -130,6 +140,11 @@ export function ClusterMap({ place }: Props) {
     };
   }, [place]);
 
+  const objectTotal = place?.objects.length ?? 0;
+  const namedCount = place
+    ? place.objects.filter((obj) => isNamedPoi(obj.name)).length
+    : 0;
+
   return (
     <section className="map-wrap">
       <h2>{place ? place.title : "Карта"}</h2>
@@ -138,6 +153,11 @@ export function ClusterMap({ place }: Props) {
           ? "Хабы и объекты выбранного кластера. Цен нет - это ещё не маршрут."
           : "Выберите карточку - на карте появятся точки кластера."}
       </p>
+      {place && objectTotal > 0 ? (
+        <p className="objects-count">
+          {namedCount} of {objectTotal} named
+        </p>
+      ) : null}
       <div ref={rootRef} className="map" />
     </section>
   );
