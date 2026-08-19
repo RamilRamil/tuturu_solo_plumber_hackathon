@@ -14,6 +14,14 @@ function ingredientLabel(id: string): string {
   return INGREDIENT_NAME_RU[id] ?? id;
 }
 
+function isNamedPoi(name: unknown): boolean {
+  return typeof name === "string" && name.trim().length > 0;
+}
+
+function poiDisplayName(name: unknown): string {
+  return typeof name === "string" ? name.trim() : "";
+}
+
 function routingLabel(code: CardState["code"], reason: string | null): string {
   if (reason) return reason;
   if (code === "no_route") return "Билета по этому плечу нет";
@@ -29,6 +37,8 @@ export function PlaceCard({ place, selected, state, onSelect }: Props) {
   const isEtalon = place.cluster_id === ETALON_CLUSTER_ID;
   const covered = place.coverage.matched.length;
   const coverageTotal = covered + place.coverage.missing.length;
+  const objectTotal = place.objects.length;
+  const namedObjects = place.objects.filter((obj) => isNamedPoi(obj.name));
   const classes = [
     "place-card",
     selected ? "selected" : "",
@@ -72,14 +82,21 @@ export function PlaceCard({ place, selected, state, onSelect }: Props) {
         <p className="rarity">
           такая связка встречается в {place.rarity.total_places_with_combo} местах
         </p>
-        <ul className="objects">
-          {place.objects.map((obj) => (
-            <li key={obj.id}>
-              {obj.name} · {ingredientLabel(obj.ingredient)} ·{" "}
-              <HoursStatus status={obj.hours_status} openingHours={obj.opening_hours} />
-            </li>
-          ))}
-        </ul>
+        {objectTotal > 0 ? (
+          <p className="objects-count">
+            {namedObjects.length} of {objectTotal} named
+          </p>
+        ) : null}
+        {namedObjects.length > 0 ? (
+          <ul className="objects">
+            {namedObjects.map((obj) => (
+              <li key={obj.id}>
+                {poiDisplayName(obj.name)} · {ingredientLabel(obj.ingredient)} ·{" "}
+                <HoursStatus status={obj.hours_status} openingHours={obj.opening_hours} />
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {onYourOwn ? (
           <p className="own">
             {state.reason
