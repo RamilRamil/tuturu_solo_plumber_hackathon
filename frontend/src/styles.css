@@ -283,6 +283,12 @@ h2 { font-size: 1.15rem; }
 .hub-chip.probe-misresolved { background: #f0d4d4; }
 .chip-note { margin-left: 6px; color: var(--muted); }
 .hubs, .coverage, .rarity, .own, .grey-reason { margin: 4px 0; font-size: 0.92rem; }
+.objects-count {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.map-wrap .objects-count { margin: 0 0 8px; }
 .objects { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.86rem; }
 .more-places, .almost { margin-top: 16px; }
 .almost-lead { color: var(--muted); font-size: 0.88rem; }
