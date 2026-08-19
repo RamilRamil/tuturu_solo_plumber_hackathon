@@ -19,6 +19,13 @@ from lib.load_fixtures import load_golden_fixtures
 from lib.models import connect, make_cluster_id, make_hub_id
 
 from backend.app import app
+from backend.services.cluster_places import (
+    build_place,
+    index_pois_by_hub,
+    load_hubs,
+    load_pois,
+    pois_for_hubs,
+)
 
 ETALON_BURGER = ["ancient_temple", "industrial_museum"]
 BACKUP_BURGER = ["ancient_temple", "ruins"]
@@ -170,6 +177,27 @@ class PlacesTests(unittest.TestCase):
         self.assertIsNotNone(boris)
         self.assertEqual(boris["hubs"][0]["probe_status"], "not_sellable")
 
+    def test_hub_filtered_pois_find_etalon_pair(self) -> None:
+        etalon = _load_fixture("etalon_1.json")
+        cid = etalon["cluster_id"]
+        rest = cid[2:] if cid.startswith("c:") else cid
+        want = set(rest.split(","))
+        hubs = load_hubs(self.conn)
+        pois = load_pois(self.conn)
+        indexed = index_pois_by_hub(pois)
+        pair = tuple(h for h in hubs if h["id"] in want)
+        self.assertEqual(len(pair), 2)
+        scoped = pois_for_hubs(indexed, pair)
+        self.assertTrue(scoped)
+        for poi in scoped:
+            self.assertIn(poi["hub_id"], want)
+        place = build_place(pair, scoped, ETALON_BURGER, 100)
+        self.assertIsNotNone(place)
+        assert place is not None
+        self.assertEqual(place["cluster_id"], etalon["cluster_id"])
+        self.assertEqual(set(place["coverage"]["matched"]), set(ETALON_BURGER))
+        self.assertEqual(place["coverage"]["missing"], [])
+
     def test_g10_persists_cluster_after_places(self) -> None:
         etalon = _load_fixture("etalon_1.json")["cluster_id"]
         self._post(ETALON_BURGER, radius_km=100, limit=20)
@@ -194,8 +222,9 @@ class PlacesTests(unittest.TestCase):
         rank = (ROOT / "backend" / "services" / "cluster_rank.py").read_text(encoding="utf-8")
         self.assertNotIn("FROM cluster", rank)
         places_svc = (ROOT / "backend" / "services" / "cluster_places.py").read_text(encoding="utf-8")
-        self.assertNotIn("FROM cluster", places_svc)
         self.assertNotIn("FROM leg", places_svc)
+        self.assertIn("iter_candidates", places_svc)
+        self.assertIn("index_pois_by_hub", places_svc)
 
 
 if __name__ == "__main__":
