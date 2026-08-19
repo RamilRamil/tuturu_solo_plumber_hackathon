@@ -35,7 +35,12 @@ _TRUTHY = ("1", "true", "yes", "on")
 
 
 class UnknownCluster(Exception):
-    """cluster_id has no row in table cluster (HTTP 404, not SSE warning)."""
+    """Illegal cluster_id or unknown hub (HTTP 404, not SSE warning)."""
+
+    def __init__(self, cluster_id: str, reason: str = "unknown hub") -> None:
+        self.cluster_id = cluster_id
+        self.reason = reason
+        super().__init__(reason)
 
 
 def db_path() -> str:
@@ -74,24 +79,33 @@ def open_mcp(path: Optional[str] = None) -> TutuMcp:
 def parse_cluster_id_hubs(cluster_id: str) -> list[str]:
     """Parse G2 id: cluster_id = 'c:' + ',' .join(sorted(hub_id)). Do not mint a new format."""
     if not cluster_id.startswith(CLUSTER_ID_PREFIX):
-        raise UnknownCluster(cluster_id)
+        raise UnknownCluster(cluster_id, "illegal cluster_id")
     rest = cluster_id[len(CLUSTER_ID_PREFIX) :]
     if not rest:
-        raise UnknownCluster(cluster_id)
+        raise UnknownCluster(cluster_id, "illegal cluster_id")
     hub_ids = rest.split(",")
     if any(not hid for hid in hub_ids):
-        raise UnknownCluster(cluster_id)
+        raise UnknownCluster(cluster_id, "illegal cluster_id")
     return hub_ids
 
 
-def load_cluster_row(conn: sqlite3.Connection, cluster_id: str) -> sqlite3.Row:
-    row = conn.execute(
-        "SELECT id, hub_ids, title FROM cluster WHERE id = ? LIMIT 1",
-        (cluster_id,),
-    ).fetchone()
-    if row is None:
-        raise UnknownCluster(cluster_id)
-    return row
+def resolve_cluster_hubs(conn: sqlite3.Connection, cluster_id: str) -> list[sqlite3.Row]:
+    """Rebuild cluster membership from cluster_id + table hub. Table cluster is not required."""
+    hub_ids = parse_cluster_id_hubs(cluster_id)
+    hubs: list[sqlite3.Row] = []
+    for hid in hub_ids:
+        row = hub_row(conn, hid)
+        if row is None:
+            raise UnknownCluster(cluster_id, "unknown hub")
+        hubs.append(row)
+    return hubs
+
+
+def load_cluster_row(conn: sqlite3.Connection, cluster_id: str) -> dict[str, Any]:
+    hubs = resolve_cluster_hubs(conn, cluster_id)
+    hub_ids = [h["id"] for h in hubs]
+    title = hubs[0]["name"] if hubs else ""
+    return {"id": cluster_id, "hub_ids": json.dumps(hub_ids), "title": title}
 
 
 def parse_hub_ids(raw: str) -> list[str]:
@@ -607,14 +621,16 @@ def quote_directed_hop(
     live_on: bool,
     sig: str = "",
 ) -> tuple[Optional[dict[str, Any]], Optional[str], bool]:
-    exact = exact_cache_quote(mcp.conn, frm, to, day, adults, sig)
-    if exact is not None:
-        return exact, None, False
     live_issue: Optional[str] = None
     if live_on:
         quote, live_issue = live_hop_quote(mcp, frm, to, day, adults)
         if quote is not None:
             return quote, None, False
+    exact = exact_cache_quote(mcp.conn, frm, to, day, adults, sig)
+    if exact is not None:
+        if live_on and live_issue is not None:
+            return exact, "cache_fallback", True
+        return exact, None, False
     quote, stale_issue = stale_leg_quote(mcp.conn, frm, to, day)
     if quote is not None:
         if live_on and live_issue is not None:
@@ -637,12 +653,7 @@ def iter_price_events(
 ) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield (event_name, payload). Caller must not block the event loop."""
     conn = mcp.conn
-    cluster = load_cluster_row(conn, req["cluster_id"])
-    cluster_ids = parse_hub_ids(cluster["hub_ids"])
-    cluster_hubs = [hub_row(conn, hid) for hid in cluster_ids]
-    if any(h is None for h in cluster_hubs):
-        raise UnknownCluster(req["cluster_id"])
-    cluster_hubs = [h for h in cluster_hubs if h is not None]
+    cluster_hubs = resolve_cluster_hubs(conn, req["cluster_id"])
 
     origin_row = match_origin_hub(conn, req["origin"])
     origin_guard = "misresolved"

@@ -173,6 +173,7 @@ class PriceApiTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(_run())
         self.assertEqual(ctx.exception.status_code, 404)
+        self.assertEqual(ctx.exception.detail, "unknown hub")
         self.assertNotIn("event: warning", str(ctx.exception.detail))
 
     def test_etalon_id_is_uglich_not_places0_or_backup(self) -> None:
@@ -355,24 +356,37 @@ class PriceApiTests(unittest.TestCase):
 
         self.assertEqual(doc["checkout_url"], checkout_url_from_obj(doc))
 
-    def test_deleted_cluster_is_http_404(self) -> None:
-        uglich = self.uglich_id
-        mcp = open_mcp(self.db_path)
-        try:
-            mcp.conn.execute("DELETE FROM cluster")
-            mcp.conn.commit()
-            with self.assertRaises(UnknownCluster):
-                load_cluster_row(mcp.conn, uglich)
-        finally:
-            mcp.close()
-
+    def test_illegal_cluster_id_is_http_404_before_sse(self) -> None:
         async def _run():
-            await post_price(self._req(uglich), _dummy_request())
+            await post_price(self._req("not-a-cluster"), _dummy_request())
 
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(_run())
         self.assertEqual(ctx.exception.status_code, 404)
+        self.assertEqual(ctx.exception.detail, "illegal cluster_id")
         self.assertNotIn("event: warning", str(ctx.exception.detail))
+
+    def test_empty_cluster_table_still_prices(self) -> None:
+        uglich = self.uglich_id
+        backup = self.priced_id
+        mcp = open_mcp(self.db_path)
+        try:
+            mcp.conn.execute("DELETE FROM cluster")
+            mcp.conn.commit()
+            row = load_cluster_row(mcp.conn, uglich)
+            self.assertEqual(row["id"], uglich)
+            row_b = load_cluster_row(mcp.conn, backup)
+            self.assertEqual(row_b["id"], backup)
+        finally:
+            mcp.close()
+        for cid in (uglich, backup):
+            status, _headers, body = self._price(cid)
+            self.assertEqual(status, 200)
+            events = _parse_sse(body)
+            self.assertEqual(events[0][0], "resolved")
+            self.assertEqual(events[-1][0], "done")
+            self.assertEqual(events[-1][1]["cluster_id"], cid)
+            self.assertIn("event: resolved", body)
 
     def test_places_then_price_ok(self) -> None:
         uglich = self.uglich_id
@@ -380,8 +394,8 @@ class PriceApiTests(unittest.TestCase):
         try:
             mcp.conn.execute("DELETE FROM cluster")
             mcp.conn.commit()
-            with self.assertRaises(UnknownCluster):
-                load_cluster_row(mcp.conn, uglich)
+            row = load_cluster_row(mcp.conn, uglich)
+            self.assertEqual(row["id"], uglich)
         finally:
             mcp.close()
         with TestClient(app) as client:
@@ -532,6 +546,99 @@ class PriceApiTests(unittest.TestCase):
             self.assertTrue(checkouts)
             urls = [it["checkout_url"] for it in checkouts[0]["items"]]
             self.assertIn(live_url, urls)
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    def test_live_on_calls_tool_despite_route_cache(self) -> None:
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        os.environ.pop("BURGER_SC_PRICE_ACCEPTED", None)
+        mcp = open_mcp(self.db_path)
+        live_url = "https://www.tutu.ru/live-despite-cache"
+        calls = {"n": 0}
+        try:
+            conn = mcp.conn
+            geo_to_id = {}
+            for row in conn.execute("SELECT * FROM hub"):
+                geo_to_id[row["tutu_geo_id"] or ""] = row["id"]
+            mow = geo_to_id.get("fixture-mow")
+            yar = geo_to_id.get("fixture-yar")
+            self.assertTrue(mow and yar)
+            requested = first_window_start(self.etalon["month"])
+            return_day = add_days(requested, max(0, int(self.etalon["days"]) - 1))
+            payload = json.dumps(
+                {
+                    "variants": [
+                        {
+                            "transport": "railway",
+                            "price": {"amount": 10},
+                            "checkout_url": "https://www.tutu.ru/cache-should-lose",
+                        }
+                    ]
+                },
+                ensure_ascii=True,
+            )
+            for origin_hub, dest_hub, day in (
+                (mow, yar, requested),
+                (yar, mow, return_day),
+            ):
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO route_cache(
+                      origin_hub, dest_hub, date, adults, pax_sig, payload_json, fetched_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        origin_hub,
+                        dest_hub,
+                        day,
+                        1,
+                        "",
+                        payload,
+                        "2026-08-19T00:00:00Z",
+                    ),
+                )
+            conn.commit()
+
+            def fake(_name: str, args: dict) -> dict:
+                calls["n"] += 1
+                dest = str(args.get("destination") or "")
+                region = ""
+                rname = dest or "x"
+                for row in mcp.conn.execute("SELECT * FROM hub"):
+                    names = [row["name"] or "", row["resolved_name"] or ""]
+                    if dest in names or any(dest.startswith(n) for n in names if n):
+                        region = row["resolved_region"] or row["expected_region"] or row["subject"]
+                        rname = row["resolved_name"] or row["name"]
+                        break
+                body = {
+                    "meta": {"to": {"name": rname, "region": region or "x"}},
+                    "variants": [
+                        {
+                            "transport": "railway",
+                            "price": {"amount": 1300},
+                            "duration_min": 180,
+                            "checkout_url": live_url,
+                            "checkout_ref": {"transport": "railway"},
+                        }
+                    ],
+                }
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(body, ensure_ascii=True)}]
+                    }
+                }
+
+            mcp.call_tool = fake  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.priced_id), mcp))
+            self.assertGreater(calls["n"], 0)
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            self.assertTrue(any(p["source"] == "live" for p in legs))
+            self.assertTrue(all(p["price"] != 10 for p in legs if p["source"] == "live"))
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
         finally:
             mcp.close()
             os.environ.pop("BURGER_LIVE_TUTU", None)

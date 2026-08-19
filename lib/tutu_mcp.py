@@ -400,6 +400,7 @@ class TutuMcp:
 
     def _post(self, payload: dict[str, Any]) -> Any:
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        # B3: https://mcp.tutu.ru/mcp is public search; do not send Authorization.
         req = urllib.request.Request(
             self.endpoint,
             data=body,
