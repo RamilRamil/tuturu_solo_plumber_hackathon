@@ -97,19 +97,20 @@ implement **не начинать**.
 | W1 диски | ~3–10 | кандидаты узел/пара + POI в `r_local`, гаверсинус | после зелёного |
 | W2 `cluster_id` + `/api/places` | ~10–16 | `make_cluster_id`; тело как в контракте; 400 на плохой вход | после зелёного |
 | W3 ранжирование B3 | ~10–16 | лексикографика + `cluster_score`; `coverage` / `rarity` | после зелёного |
-| W4 rarity + регресс | ~16–26 | SC-B1, SC-B2, SC-B3 на фикстурах | до G10 |
-| G10 | конец часа 26 | оба бургера в топ-5; в C уходит `cluster_id` **пары** из etalon_1, не обязательно `places[0]` | кусок B |
+| W4 rarity + регресс | ~16–26 | SC-B1 hard, SC-B2 hard, SC-B3; топ-5 = smoke | до G10 |
+| G10 | конец часа 26 | hard SC-B1+B3+B2; в C уходит `cluster_id` **пары** из etalon_1, не обязательно `places[0]` | кусок B |
 
 После G10 поток B на таймлайне пуст (часы 26–48 — C/D/живой SC-price).
 
 ## Зависимости от фикстур
 
 B стартует на золотых файлах, не на живом ингесте A. Подмена волной 1 не должна
-менять контракт и формулу ранжирования.
+менять контракт и формулу ранжирования. Она **может** сдвинуть пару из топ-5 —
+это не смена шва.
 
 | Артефакт | Зачем B |
 |---|---|
-| [fixtures/etalon_1.json](../../fixtures/etalon_1.json) | SC-B1: бургер `ancient_temple`+`industrial_museum`, 100 км, `cluster_id` пары в топ-5 (не обязан #1) |
+| [fixtures/etalon_1.json](../../fixtures/etalon_1.json) | SC-B1 hard: бургер `ancient_temple`+`industrial_museum`, 100 км, `cluster_id` пары **есть в `places[]`** с полным покрытием (топ-5 = smoke) |
 | [fixtures/backup_single_hub.json](../../fixtures/backup_single_hub.json) | SC-B2: `ancient_temple`+`ruins`, 100 км, одноузловой Ярославль |
 | [fixtures/rows/hubs.json](../../fixtures/rows/hubs.json) | узлы, `probe_status`, `lat`/`lon`, `population` |
 | [fixtures/rows/poi.json](../../fixtures/rows/poi.json) | объекты с точным `ingredient_id` (Ярославль несёт оба ингредиента эталона — не вырезать храмы) |

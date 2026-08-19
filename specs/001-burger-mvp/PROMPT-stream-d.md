@@ -51,7 +51,7 @@ Frontmatter: type: Feature Spec, feature: 001-burger-mvp, status: draft.
 - серые карточки не исчезают; «почти подходит» режется первым при пожаре (B4)
 - карта покрытия (V4) честная дыра; часы: три состояния, веб-поиск не в 001 как полный
 - G10 час 26: пользователь видит /places топ и стрим /price по одному cluster_id
-- SC-ranking в UI как топ-5 с фикстур; цена fixture-confirmed до live
+- SC-ranking в UI = клиент не сортирует; клик пары; цена fixture-confirmed до live
 - user scenarios, FR, assumptions
 - ASCII в идентификаторах
 

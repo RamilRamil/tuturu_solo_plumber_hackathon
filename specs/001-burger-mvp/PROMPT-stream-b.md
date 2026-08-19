@@ -53,8 +53,8 @@ timestamp ISO, tags включая spec-kit и stream-b.
 - диски вокруг узлов, НЕ DBSCAN; пары нерезаемы
 - coverage_ratio доминирует (лексикографика, потом cluster_score)
 - cluster_id из api-contract (множество hub_id, не радиус)
-- SC-ranking жёсткий офлайн на фикстурах (оба бургера в топ-5); SC-price НЕ твой
-- G10: к концу часа 26 /places отдаёт эталон в топ-5 на фикстурах/волне 1
+- SC-ranking жёсткий офлайн: пара существует + SC-B3; топ-5 = smoke; SC-price НЕ твой
+- G10: к концу часа 26 /places отдаёт hard SC-B1 на фикстурах; волна 1 не обязана держать пару в топ-5
 - ссылки на frozen artifacts, не копипаста schema/api
 - user scenarios + testable FR + assumptions
 - ASCII в идентификаторах кода; проза на русском

@@ -20,10 +20,11 @@ OKF-бандл feature 001, оформленный по Spec Kit. Путь фа�
 - [readiness-gate.md](readiness-gate.md) — `Readiness Gate`: что блокирует час 0,
   что закрываем на ходу, что не чиним. **Читать до раздачи планов.**
 - [log.md](log.md) — `Log`: хронология решений по 001.
-- Потоки (specify + plan, стоп до tasks/кода):
-  [B spec](stream-b-phase1.md) / [plan](stream-b-plan.md),
-  [C spec](stream-c-phase2.md) / [plan](stream-c-plan.md),
-  [D spec](stream-d-frontend.md) / [plan](stream-d-plan.md).
+- Потоки (specify + plan + tasks):
+  [A research](stream-a-research.md) / [tasks](stream-a-tasks.md),
+  [B spec](stream-b-phase1.md) / [plan](stream-b-plan.md) / [tasks](stream-b-tasks.md),
+  [C spec](stream-c-phase2.md) / [plan](stream-c-plan.md) / [tasks](stream-c-tasks.md),
+  [D spec](stream-d-frontend.md) / [plan](stream-d-plan.md) / [tasks](stream-d-tasks.md).
 
 ## Внешние источники истины (корень репозитория)
 

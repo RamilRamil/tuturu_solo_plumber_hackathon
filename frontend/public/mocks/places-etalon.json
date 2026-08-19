@@ -1,0 +1,342 @@
+{
+  "total_found": 12,
+  "places": [
+    {
+      "cluster_id": "c:Ярославль|Ярославская область",
+      "title": "Ярославль",
+      "hubs": [
+        {
+          "hub_id": "Ярославль|Ярославская область",
+          "name": "Ярославль",
+          "region": "Ярославская область",
+          "lat": 57.61667,
+          "lon": 39.85,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 57.61667, "lon": 39.85 },
+      "diameter_km": 12,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 1, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-yar-temple-1",
+          "name": "Успенский собор",
+          "ingredient": "ancient_temple",
+          "lat": 57.626,
+          "lon": 39.887,
+          "significance": 4,
+          "wikidata": null,
+          "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-yar-industrial-museum",
+          "name": "Музей истории Ярославского завода",
+          "ingredient": "industrial_museum",
+          "lat": 57.63,
+          "lon": 39.89,
+          "significance": 1,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Тверь|Тверская область",
+      "title": "Тверь",
+      "hubs": [
+        {
+          "hub_id": "Тверь|Тверская область",
+          "name": "Тверь",
+          "region": "Тверская область",
+          "lat": 56.8578278,
+          "lon": 35.9219278,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 56.8578278, "lon": 35.9219278 },
+      "diameter_km": 10,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 2, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-tver-temple",
+          "name": "Храм Твери",
+          "ingredient": "ancient_temple",
+          "lat": 56.86,
+          "lon": 35.92,
+          "significance": 3,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-tver-museum",
+          "name": "Музей тверской промышленности",
+          "ingredient": "industrial_museum",
+          "lat": 56.858,
+          "lon": 35.93,
+          "significance": 1,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Владимир|Владимирская область",
+      "title": "Владимир",
+      "hubs": [
+        {
+          "hub_id": "Владимир|Владимирская область",
+          "name": "Владимир",
+          "region": "Владимирская область",
+          "lat": 56.13333,
+          "lon": 40.41667,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 56.13333, "lon": 40.41667 },
+      "diameter_km": 9,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 4, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-vlad-temple",
+          "name": "Успенский собор",
+          "ingredient": "ancient_temple",
+          "lat": 56.129,
+          "lon": 40.409,
+          "significance": 6,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-vlad-museum",
+          "name": "Музей хрусталя",
+          "ingredient": "industrial_museum",
+          "lat": 56.13,
+          "lon": 40.42,
+          "significance": 2,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Суздаль|Владимирская область",
+      "title": "Суздаль",
+      "hubs": [
+        {
+          "hub_id": "Суздаль|Владимирская область",
+          "name": "Суздаль",
+          "region": "Владимирская область",
+          "lat": 56.42111,
+          "lon": 40.44889,
+          "probe_status": "not_sellable"
+        }
+      ],
+      "center": { "lat": 56.42111, "lon": 40.44889 },
+      "diameter_km": 6,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 5, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-suz-temple",
+          "name": "Рождественский собор",
+          "ingredient": "ancient_temple",
+          "lat": 56.421,
+          "lon": 40.449,
+          "significance": 5,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-suz-museum",
+          "name": "Музей деревянного зодчества",
+          "ingredient": "industrial_museum",
+          "lat": 56.42,
+          "lon": 40.45,
+          "significance": 2,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Торжок|Тверская область",
+      "title": "Торжок",
+      "hubs": [
+        {
+          "hub_id": "Торжок|Тверская область",
+          "name": "Торжок",
+          "region": "Тверская область",
+          "lat": 57.03333,
+          "lon": 34.96667,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 57.03333, "lon": 34.96667 },
+      "diameter_km": 5,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 6, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-tor-temple",
+          "name": "Борисоглебский монастырь",
+          "ingredient": "ancient_temple",
+          "lat": 57.034,
+          "lon": 34.967,
+          "significance": 4,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-tor-museum",
+          "name": "Музей золотного шитья",
+          "ingredient": "industrial_museum",
+          "lat": 57.033,
+          "lon": 34.968,
+          "significance": 2,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
+      "title": "Ярославль и Ростов Великий",
+      "hubs": [
+        {
+          "hub_id": "Ярославль|Ярославская область",
+          "name": "Ярославль",
+          "region": "Ярославская область",
+          "lat": 57.61667,
+          "lon": 39.85,
+          "probe_status": "sellable"
+        },
+        {
+          "hub_id": "Ростов|Ярославская область",
+          "name": "Ростов Великий",
+          "region": "Ярославская область",
+          "lat": 57.18333,
+          "lon": 39.41667,
+          "probe_status": "sellable"
+        }
+      ],
+      "center": { "lat": 57.4, "lon": 39.63 },
+      "diameter_km": 58,
+      "coverage": {
+        "matched": ["ancient_temple", "industrial_museum"],
+        "missing": []
+      },
+      "rarity": { "rank": 3, "total_places_with_combo": 7 },
+      "objects": [
+        {
+          "id": "n-rostov-resurrection",
+          "name": "Церковь Воскресения Христова",
+          "ingredient": "ancient_temple",
+          "lat": 57.18,
+          "lon": 39.41,
+          "significance": 7,
+          "wikidata": "Q123",
+          "start_date": { "raw": "1670", "from": 1670, "to": 1670 },
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-yar-temple-pair",
+          "name": "Успенский собор",
+          "ingredient": "ancient_temple",
+          "lat": 57.626,
+          "lon": 39.887,
+          "significance": 4,
+          "wikidata": null,
+          "start_date": { "raw": "1646", "from": 1646, "to": 1646 },
+          "opening_hours": null,
+          "hours_status": "unknown"
+        },
+        {
+          "id": "n-yar-industrial-museum-pair",
+          "name": "Музей истории Ярославского завода",
+          "ingredient": "industrial_museum",
+          "lat": 57.63,
+          "lon": 39.89,
+          "significance": 1,
+          "wikidata": null,
+          "start_date": null,
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    },
+    {
+      "cluster_id": "c:Борисоглебский|Ярославская область",
+      "title": "Борисоглебский",
+      "hubs": [
+        {
+          "hub_id": "Борисоглебский|Ярославская область",
+          "name": "Борисоглебский",
+          "region": "Ярославская область",
+          "lat": 57.2586,
+          "lon": 39.1506,
+          "probe_status": "not_sellable"
+        }
+      ],
+      "center": { "lat": 57.2586, "lon": 39.1506 },
+      "diameter_km": 4,
+      "coverage": {
+        "matched": ["ancient_temple"],
+        "missing": ["industrial_museum"]
+      },
+      "rarity": { "rank": 1, "total_places_with_combo": 2 },
+      "objects": [
+        {
+          "id": "n-borisoglebsky-monastery",
+          "name": "Борисоглебский монастырь",
+          "ingredient": "ancient_temple",
+          "lat": 57.2586,
+          "lon": 39.1506,
+          "significance": 4,
+          "wikidata": null,
+          "start_date": { "raw": "1363", "from": 1363, "to": 1363 },
+          "opening_hours": null,
+          "hours_status": "unknown"
+        }
+      ]
+    }
+  ]
+}

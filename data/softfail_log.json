@@ -1,0 +1,2444 @@
+[
+  {
+    "context": "d2:Струнино|Владимирская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Струнино|Владимирская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Александров|Владимирская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Красный Холм|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Талдом|Московская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кольчугино|Владимирская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Переславль-Залесский|Ярославская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Юрьев-Польский|Владимирская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Красный Холм|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Калязин|Тверская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Красный Холм|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Струнино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Весьегонск|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кашин|Тверская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Александров|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ростов|Ярославская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Красный Холм|Тверская область->Талдом|Московская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Красный Холм|Тверская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Красный Холм|Тверская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Красный Холм|Тверская область->Весьегонск|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Красный Холм|Тверская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Юрьев-Польский|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Кольчугино|Владимирская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Ярославль|Ярославская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Переславль-Залесский|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Калязин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Красный Холм|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Весьегонск|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Нерехта|Костромская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Рыбинск|Ярославская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Ростов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Кострома|Костромская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Весьегонск|Тверская область->Кашин|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Весьегонск|Тверская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Весьегонск|Тверская область->Красный Холм|Тверская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Данилов|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Любим|Ярославская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Рыбинск|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Ярославль|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Данилов|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Грязовец|Вологодская область->Буй|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Любим|Ярославская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Нерехта|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Кострома|Костромская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  },
+  {
+    "context": "d2:Буй|Костромская область->Грязовец|Вологодская область",
+    "requested": [
+      "avia",
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "summary_keys": [
+      "bus",
+      "etrain",
+      "railway"
+    ],
+    "at": "2026-08-19T13:46:51Z"
+  }
+]

@@ -71,7 +71,7 @@ D **не** заводит SQLite, не копирует `schema.sql`, не оп�
 | `center` | `lat`, `lon` |
 | `diameter_km` | фактический диаметр; подпись честная (F17), может быть > `radius_km` |
 | `coverage.matched` / `coverage.missing` | полное покрытие vs «почти подходит» |
-| `rarity.rank` / `rarity.total_places_with_combo` | как пришло; UI не считает заново |
+| `rarity.rank` / `rarity.total_places_with_combo` | как пришло; UI не считает заново и не подписывает «редкая связка» на эталоне |
 | `objects` | `PoiObject[]` — все на карте, топ в карточке |
 
 Порядок в массиве `places[]` = ранг B3. UI не sort.

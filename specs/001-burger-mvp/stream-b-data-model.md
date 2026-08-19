@@ -79,6 +79,7 @@ PK `(id, radius_km)` — см. комментарий в schema. Публичн�
 - **Coverage** — `matched` / `missing` относительно `ingredients[]`.
 - **Rarity** — `rank` (1-based в группе того же matched-набора),
   `total_places_with_combo`; в score = `1 / total_places_with_combo`.
+  На эталоне это честный счётчик соседей Ярославля, не вау редкости.
 - **cluster_score** — формула плана B; веса в конфиге.
 - **diameter_km** — по крайним POI кластера (если кэш расходится с POI —
   побеждает пересчёт).

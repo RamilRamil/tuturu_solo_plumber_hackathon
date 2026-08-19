@@ -1,0 +1,18 @@
+{
+  "wave": 1,
+  "dM_max_km": 400,
+  "cities": 268,
+  "probed": 267,
+  "departure_date": "2026-09-09",
+  "counts": {
+    "sellable": 178,
+    "not_sellable": 88,
+    "misresolved": 1
+  },
+  "errors": [],
+  "regression_missing": [],
+  "regression_pass": true,
+  "softfail_n": 260,
+  "db": "data/burger.db",
+  "at": "2026-08-19T13:33:49Z"
+}

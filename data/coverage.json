@@ -1,0 +1,52 @@
+{
+  "regions_loaded": [
+    "Yaroslavl oblast"
+  ],
+  "admin_level_4": [
+    "Владимирская область",
+    "Вологодская область",
+    "Зарубежка",
+    "Ивановская область",
+    "Костромская область",
+    "Московская область",
+    "Сабля",
+    "Солоница",
+    "Тверская область",
+    "Ярославская область"
+  ],
+  "pbf": "data/osm/yaroslavl_oblast-latest.osm.pbf",
+  "pbf_bytes": 45213826,
+  "poi_count": 2084,
+  "poi_attached": 2084,
+  "by_ingredient": {
+    "ancient_temple": 791,
+    "museum_any": 157,
+    "viewpoint": 42,
+    "local_food": 19,
+    "theatre": 83,
+    "spring": 77,
+    "ski": 8,
+    "artwork": 118,
+    "outlet": 132,
+    "beach": 152,
+    "quarry": 15,
+    "market": 36,
+    "ruins": 263,
+    "banya": 72,
+    "antiques": 17,
+    "archaeology": 3,
+    "industrial_site": 38,
+    "gallery": 5,
+    "manor": 8,
+    "waterfall": 1,
+    "fortress": 10,
+    "brewery": 9,
+    "crafts": 5,
+    "railway_heritage": 17,
+    "industrial_museum": 1,
+    "reserve": 5
+  },
+  "hubs_seen": 268,
+  "at": "2026-08-19T13:44:53Z",
+  "note": "wave1 D3 uses Yaroslavl oblast extract (G7); not russia-latest"
+}

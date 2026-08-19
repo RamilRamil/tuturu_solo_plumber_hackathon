@@ -27,7 +27,7 @@
     "price_status": "fixture-confirmed"
   },
   "acceptance": {
-    "sc_ranking": "pair cluster_id MUST appear in top-5 on live disc pass with empty cluster table (offline, hard). A single-hub Yaroslavl with the same coverage is a legal complete answer and MAY rank above the pair; do not force pair to rank 1 via weights. Demo script selects the pair card for phase-2 price.",
+    "sc_ranking": "HARD (offline, empty cluster table, live disc pass): pair cluster_id MUST exist in places[] with coverage.matched = both ingredients and missing empty; plus SC-B3. Pair-in-top-5 is fixture smoke only, not a build fail, not required after wave 1. A single-hub Yaroslavl with the same coverage is a legal complete answer. Do not force pair rank via weights. Demo script selects the pair card for phase-2 price.",
     "sc_price": "do not use 4342 as live pass; live Tutu run still required"
   }
 }

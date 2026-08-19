@@ -67,7 +67,7 @@ status: draft
 - [x] Карта покрытия — честная дыра (V4)
 - [x] Часы: три состояния; полный веб-поиск не в 001
 - [x] G10 час 26: пользователь видит топ `/places` и стрим `/price` по одному `cluster_id`
-- [x] SC-ranking в UI как топ-5 с фикстур; цена `fixture-confirmed` до live обоих сценариев
+- [x] UI не переранжирует `places[]`; клик пары для SSE; цена `fixture-confirmed` до live обоих сценариев
 - [x] Край демо: nginx `:8080` (не чужой домен)
 - [x] ASCII в идентификаторах; проза русская
 - [x] Не созданы `specs/002-*` и `.specify/`; не правлены index.md, log.md, orchestration, `frontend/src`
