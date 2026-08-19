@@ -28,6 +28,14 @@
 
 - [ ] Desktop-first UX; inversion; SSE; grey from routing results; almost-fits; coverage; share URL
 
+## Harden places (codex/harden-places)
+
+### [places-perf-helper]
+
+- [x] E. /api/places: hub_id POI index, hull diameter, persist ranked[:cap]
+- [x] F. ingest/coverage_state.py union helper (do not wire parse_osm.py)
+- Do not edit parse_osm.py, frontend/**, price.py, schema.sql, burger.db
+
 ## Readiness basket A
 
 ### [worker-a-ingest]
