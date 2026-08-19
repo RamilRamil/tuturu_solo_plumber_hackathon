@@ -54,30 +54,56 @@ function clusterPoints(place: Place): [number, number][] {
   return points;
 }
 
-function frameCluster(map: maplibregl.Map, place: Place | null, animate: boolean): void {
-  if (!place || !map.isStyleLoaded()) return;
-  const points = clusterPoints(place);
-  if (points.length === 0) return;
-  const duration = animate ? 800 : 0;
-  if (points.length === 1) {
-    map.flyTo({
-      center: points[0],
-      zoom: SINGLE_ZOOM,
-      essential: true,
-      duration,
-    });
-    return;
-  }
-  const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
-  for (let i = 1; i < points.length; i += 1) {
-    bounds.extend(points[i]);
-  }
-  map.fitBounds(bounds, {
-    padding: FIT_PADDING,
-    maxZoom: FIT_MAX_ZOOM,
+function safePadding(map: maplibregl.Map): number {
+  const box = map.getContainer();
+  const span = Math.min(box.clientWidth, box.clientHeight);
+  if (span < 32) return 0;
+  const maxPad = Math.max(0, Math.floor(span / 4) - 8);
+  return Math.min(FIT_PADDING, maxPad);
+}
+
+function flyToCenter(map: maplibregl.Map, place: Place, duration: number): void {
+  if (!isFinitePoint(place.center.lon, place.center.lat)) return;
+  map.flyTo({
+    center: [place.center.lon, place.center.lat],
+    zoom: SINGLE_ZOOM,
     essential: true,
     duration,
   });
+}
+
+function frameCluster(map: maplibregl.Map, place: Place | null, animate: boolean): void {
+  if (!place) return;
+  const points = clusterPoints(place);
+  if (points.length === 0 && isFinitePoint(place.center.lon, place.center.lat)) {
+    points.push([place.center.lon, place.center.lat]);
+  }
+  if (points.length === 0) return;
+  const duration = animate ? 1000 : 0;
+  try {
+    map.stop();
+    if (points.length === 1) {
+      map.flyTo({
+        center: points[0],
+        zoom: SINGLE_ZOOM,
+        essential: true,
+        duration,
+      });
+      return;
+    }
+    const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
+    for (let i = 1; i < points.length; i += 1) {
+      bounds.extend(points[i]);
+    }
+    map.fitBounds(bounds, {
+      padding: safePadding(map),
+      maxZoom: FIT_MAX_ZOOM,
+      essential: true,
+      duration,
+    });
+  } catch {
+    flyToCenter(map, place, duration);
+  }
 }
 
 export function ClusterMap({ place }: Props) {
@@ -101,7 +127,6 @@ export function ClusterMap({ place }: Props) {
 
     const observer = new ResizeObserver(() => {
       map.resize();
-      frameCluster(map, placeRef.current, false);
     });
     observer.observe(container);
 
@@ -116,8 +141,11 @@ export function ClusterMap({ place }: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    let cancelled = false;
+    let fly: (() => void) | undefined;
 
     const apply = () => {
+      if (cancelled) return;
       const objectFeatures = place
         ? place.objects
             .filter((obj) => isNamedPoi(obj.name))
@@ -188,13 +216,25 @@ export function ClusterMap({ place }: Props) {
 
       upsert("hubs", hubFeatures, "#1f4d3a", 10);
       upsert("objects", objectFeatures, "#e04e2a", 7);
-      frameCluster(map, place, true);
+      const clusterId = place?.cluster_id ?? "";
+      fly = () => {
+        if (cancelled) return;
+        if ((placeRef.current?.cluster_id ?? "") !== clusterId) return;
+        frameCluster(map, placeRef.current, true);
+      };
+      requestAnimationFrame(fly);
+      map.once("idle", fly);
     };
 
-    if (map.isStyleLoaded()) apply();
-    else map.once("load", apply);
+    if (map.isStyleLoaded()) {
+      apply();
+    } else {
+      map.once("load", apply);
+    }
     return () => {
+      cancelled = true;
       map.off("load", apply);
+      if (fly) map.off("idle", fly);
     };
   }, [place]);
 

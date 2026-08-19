@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchPlaces, streamPrice } from "./api/client";
 import { HttpError } from "./api/price";
 import { AlmostFits } from "./components/AlmostFits";
@@ -11,10 +11,10 @@ import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
 import { noRouteRecovered } from "./format";
+import { knownIngredients } from "./catalog/ingredients";
 import { DEFAULT_RADIUS, ETALON_INGREDIENTS } from "./ids";
 import { encodeShare, parseShare, shareHref, type ShareState } from "./share";
 import type {
-  BudgetScope,
   CardState,
   PlacesResponse,
   RadiusKm,
@@ -117,21 +117,27 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cardState, setCardState] = useState<Record<string, CardState>>({});
   const [origin, setOrigin] = useState(boot.origin ?? "Москва");
+  const [originNeed, setOriginNeed] = useState(false);
   const [days, setDays] = useState(boot.days ?? 3);
   const [month, setMonth] = useState(boot.month ?? "2026-10");
   const [adults, setAdults] = useState(boot.adults ?? 1);
   const [childrenAges, setChildrenAges] = useState(boot.children_ages ?? "");
-  const [budgetScope, setBudgetScope] = useState<BudgetScope>(
-    boot.budget_scope ?? "transport",
-  );
   const [sseEvents, setSseEvents] = useState<SseEvent[]>([]);
   const [sseError, setSseError] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [aborted, setAborted] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const [offSubjects, setOffSubjects] = useState<string[]>([]);
+  const onOffSubjects = useCallback((next: string[]) => {
+    setOffSubjects((prev) => {
+      if (prev.length === next.length && prev.every((item, i) => item === next[i])) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
   const wantedClusterRef = useRef<string | null>(boot.cluster_id);
-  const shareClusterRef = useRef<string | null>(boot.cluster_id);
+  const abortRef = useRef<AbortController | null>(null);
 
   const places = placesRes?.places ?? [];
   const fullPlaces = places.filter((place) => place.coverage.missing.length === 0);
@@ -158,6 +164,7 @@ export function App() {
       ingredients: selectedIngredients,
       radius_km: radiusKm,
       limit: 20,
+      exclude_regions: offSubjects,
     })
       .then((res) => {
         if (cancelled) return;
@@ -190,7 +197,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedIngredients, radiusKm, placesNonce]);
+  }, [selectedIngredients, radiusKm, placesNonce, offSubjects]);
 
   useEffect(() => {
     const next = encodeShare({
@@ -202,7 +209,7 @@ export function App() {
       month,
       adults,
       children_ages: childrenAges || null,
-      budget_scope: budgetScope,
+      budget_scope: null,
     });
     const url = `${window.location.pathname}${next}${window.location.hash}`;
     window.history.replaceState(null, "", url);
@@ -216,7 +223,6 @@ export function App() {
     month,
     adults,
     childrenAges,
-    budgetScope,
   ]);
 
   const toggleIngredient = (id: string) => {
@@ -227,6 +233,11 @@ export function App() {
 
   const startPrice = () => {
     if (!selectedPlace) return;
+    if (!origin.trim()) {
+      setOriginNeed(true);
+      return;
+    }
+    setOriginNeed(false);
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -244,7 +255,7 @@ export function App() {
         month,
         adults,
         children_ages: parseAges(childrenAges),
-        budget_scope: budgetScope,
+        budget_scope: "transport",
       },
       (event) => {
         setSseEvents((prev) => {
@@ -291,7 +302,7 @@ export function App() {
       month,
       adults,
       children_ages: childrenAges || null,
-      budget_scope: budgetScope,
+      budget_scope: null,
     });
     const absolute = `${window.location.origin}${href}`;
     try {
@@ -303,21 +314,14 @@ export function App() {
     }
   };
 
-  const unknownFromShare =
-    Boolean(shareClusterRef.current) &&
-    !placesLoading &&
-    places.length > 0 &&
-    !places.some((place) => place.cluster_id === shareClusterRef.current);
-
   return (
     <div className="app">
       <header className="topbar">
         <div>
-          <p className="kicker">сначала места, потом город выезда</p>
+          <p className="kicker">Не знаете куда — знаете зачем</p>
           <h1>Бургер</h1>
           <p className="lede">
-            Конструктор поездки: интересы и радиус → кластеры без цен → один
-            кластер → откуда едете и живой поток маршрута.
+            Выберите, что хотите увидеть, — Бургер найдёт направление и соберёт поездку.
           </p>
         </div>
         <div className="topbar-actions">
@@ -334,7 +338,8 @@ export function App() {
             onToggle={toggleIngredient}
             radiusKm={radiusKm}
             onParsed={(ingredients, parsedRadius) => {
-              setSelectedIngredients(ingredients);
+              const kept = knownIngredients(ingredients);
+              if (kept.length > 0) setSelectedIngredients(kept);
               if (parsedRadius) setRadiusKm(parsedRadius);
             }}
           />
@@ -346,6 +351,7 @@ export function App() {
           <CoverageMap
             emptyPlaces={emptyPlaces}
             hasIngredients={selectedIngredients.length > 0}
+            onOffSubjects={onOffSubjects}
           />
         </aside>
 
@@ -368,12 +374,6 @@ export function App() {
               комбинации.
             </p>
           ) : null}
-          {unknownFromShare ? (
-            <div className="not-found">
-              <h3>404</h3>
-              <p>Этого места нет в текущей выдаче.</p>
-            </div>
-          ) : null}
 
           <div className={selectedPlace ? "stage has-selection" : "stage"}>
             <PlaceList
@@ -393,19 +393,21 @@ export function App() {
                 <OriginForm
                   enabled
                   origin={origin}
+                  originNeed={originNeed}
                   days={days}
                   month={month}
                   adults={adults}
                   childrenAges={childrenAges}
-                  budgetScope={budgetScope}
                   busy={streaming}
                   onAbort={abortPrice}
-                  onOrigin={setOrigin}
+                  onOrigin={(value) => {
+                    setOrigin(value);
+                    if (value.trim()) setOriginNeed(false);
+                  }}
                   onDays={setDays}
                   onMonth={setMonth}
                   onAdults={setAdults}
                   onChildrenAges={setChildrenAges}
-                  onBudgetScope={setBudgetScope}
                   onSubmit={startPrice}
                 />
                 <PriceStream

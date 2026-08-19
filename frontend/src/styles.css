@@ -58,23 +58,34 @@ h2 { font-size: 1.15rem; }
 .kicker {
   margin: 0 0 6px;
   color: var(--ember);
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .lede {
   margin: 8px 0 0;
-  max-width: 46ch;
+  max-width: 52ch;
   color: var(--muted);
   font-size: 0.95rem;
 }
 
 .topbar-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.origin-field-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.origin-field.need input { border-color: var(--danger); }
+.origin-need {
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .share-btn,
@@ -192,6 +203,17 @@ h2 { font-size: 1.15rem; }
   font-size: 0.85rem;
 }
 .other-field input { padding: 8px; border-radius: 10px; border: 1px solid var(--line); }
+.ai-phrase {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ai-status {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin: 6px 0 0;
+  font-weight: 700;
+}
 
 .radius { margin: 16px 0 0; }
 .radius input[type="range"] { width: 100%; accent-color: var(--ember); }
@@ -208,6 +230,12 @@ h2 { font-size: 1.15rem; }
 
 .coverage-panel { margin-top: 16px; }
 .coverage-count { font-weight: 700; margin: 0 0 8px; }
+.coverage-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 10px;
+}
 .coverage-legend { display: flex; gap: 8px; margin-bottom: 10px; }
 .swatch {
   font-size: 0.75rem;
@@ -215,12 +243,29 @@ h2 { font-size: 1.15rem; }
   border-radius: 999px;
 }
 .swatch.loaded, .cov-item.loaded { background: #d7ead6; }
+.swatch.off { background: #eceae4; color: var(--muted); }
 .swatch.failed, .cov-item.failed { background: #f0d4d4; }
 .swatch.hole, .cov-item.hole {
   background: repeating-linear-gradient(-45deg, #ead9c0, #ead9c0 5px, #f7efe3 5px, #f7efe3 10px);
 }
 .coverage-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .cov-item { padding: 6px 8px; border-radius: 10px; font-size: 0.86rem; }
+.cov-item-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.cov-item.loaded.off {
+  background: #eceae4;
+  color: var(--muted);
+  opacity: 0.72;
+}
 .coverage-note, .mute { color: var(--muted); font-size: 0.8rem; }
 .ingest-hole {
   margin-top: 10px;

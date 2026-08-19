@@ -51,6 +51,7 @@ export type PlacesRequest = {
   ingredients: string[];
   radius_km: RadiusKm;
   limit?: number;
+  exclude_regions?: string[];
 };
 
 export type PlacesResponse = {

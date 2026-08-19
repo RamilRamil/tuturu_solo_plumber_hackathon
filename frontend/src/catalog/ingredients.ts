@@ -79,3 +79,15 @@ export const INGREDIENT_NAME_RU: Record<string, string> = {
   ski: "Горнолыжка",
   hiking: "Треккинг и веломаршруты",
 };
+
+export const INGREDIENT_IDS = new Set(INGREDIENTS.map((item) => item.id));
+
+export function knownIngredients(ids: string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    if (!INGREDIENT_IDS.has(id)) continue;
+    if (out.includes(id)) continue;
+    out.push(id);
+  }
+  return out;
+}

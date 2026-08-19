@@ -405,11 +405,21 @@ def persist_clusters(
     return writes
 
 
+def _outside_excluded_regions(place: dict[str, Any], excluded: set[str]) -> bool:
+    if not excluded:
+        return True
+    hubs = place.get("hubs") or []
+    if not hubs:
+        return False
+    return all((hub.get("region") or "") not in excluded for hub in hubs)
+
+
 def list_places(
     conn: sqlite3.Connection,
     ingredients: list[str],
     radius_km: int,
     limit: int = DEFAULT_LIMIT,
+    exclude_regions: list[str] | None = None,
 ) -> dict[str, Any]:
     hubs = load_hubs(conn)
     pois = load_pois(conn)
@@ -421,6 +431,9 @@ def list_places(
         if place is not None:
             raw.append(place)
     ranked = rank_places(raw, ingredients, radius_km)
+    excluded = {name for name in (exclude_regions or []) if name}
+    if excluded:
+        ranked = [place for place in ranked if _outside_excluded_regions(place, excluded)]
     cap = max(0, int(limit))
     persist_clusters(conn, ranked, radius_km, cap=cap)
     return {"total_found": len(ranked), "places": ranked[:cap]}

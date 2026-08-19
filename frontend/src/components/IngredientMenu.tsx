@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { fetchParse } from "../api/client";
+import { fetchParse, fetchParseHealth } from "../api/client";
 import { GROUPS, GROUP_NAME_RU, INGREDIENTS, INGREDIENT_NAME_RU } from "../catalog/ingredients";
 import type { DensityLabel, RadiusKm } from "../types/contract";
 
@@ -31,32 +31,56 @@ export function IngredientMenu({ selected, onToggle, radiusKm, onParsed }: Props
   const [editing, setEditing] = useState(selected.length === 0);
   const [phrase, setPhrase] = useState("");
   const [unmatched, setUnmatched] = useState<string[]>([]);
+  const [parseHint, setParseHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [aiOn, setAiOn] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (selected.length === 0) setEditing(true);
   }, [selected.length]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchParseHealth()
+      .then((res) => {
+        if (!cancelled) setAiOn(res.enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setAiOn(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const chips = selected.map((id) => ({
     id,
     name: INGREDIENT_NAME_RU[id] ?? id,
   }));
+  const aiDown = aiOn === false;
 
   const submitPhrase = (event: FormEvent) => {
     event.preventDefault();
     const text = phrase.trim();
     if (!text || busy) return;
+    if (aiDown) return;
     setBusy(true);
     setUnmatched([]);
+    setParseHint(null);
     fetchParse({ text, radius_km: radiusKm })
       .then((res) => {
-        if (res.ingredients.length === 0) return;
-        onParsed(res.ingredients, asRadius(res.radius_km));
-        if (res.unmatched.length > 0) setUnmatched(res.unmatched);
-        setPhrase("");
+        if (res.ingredients.length > 0) {
+          onParsed(res.ingredients, asRadius(res.radius_km));
+          setPhrase("");
+        }
+        if (res.unmatched.length > 0) {
+          setUnmatched(res.unmatched);
+        } else if (res.ingredients.length === 0) {
+          setParseHint("не распознали запрос");
+        }
       })
       .catch(() => {
-        // silent fallback: chips stay the primary path
+        setAiOn(false);
       })
       .finally(() => setBusy(false));
   };
@@ -113,24 +137,26 @@ export function IngredientMenu({ selected, onToggle, radiusKm, onParsed }: Props
               </div>
             </div>
           ))}
-          <form onSubmit={submitPhrase}>
-            <label className="other-field">
-              Другое
-              <input
-                type="text"
-                value={phrase}
-                disabled={busy}
-                autoComplete="off"
-                placeholder="например: храмы и музеи недалеко"
-                onChange={(event) => setPhrase(event.target.value)}
-              />
-            </label>
-            {unmatched.length > 0 ? (
-              <p className="other-field">не распознали: {unmatched.join(", ")}</p>
-            ) : null}
-          </form>
         </>
       )}
+      <form className="ai-phrase" onSubmit={submitPhrase}>
+        <label className="other-field">
+          опиши, куда хочешь
+          <input
+            type="text"
+            value={phrase}
+            disabled={busy || aiDown}
+            autoComplete="off"
+            placeholder="опиши, куда хочешь"
+            onChange={(event) => setPhrase(event.target.value)}
+          />
+        </label>
+        {aiDown ? <p className="ai-status">AI недоступен</p> : null}
+        {unmatched.length > 0 ? (
+          <p className="other-field">не распознали: {unmatched.join(", ")}</p>
+        ) : null}
+        {parseHint ? <p className="other-field">{parseHint}</p> : null}
+      </form>
     </section>
   );
 }

@@ -42,6 +42,7 @@ from backend.services.price import (
     match_origin_hub,
     open_mcp,
     pick_priced_offer,
+    quote_from_route_doc,
     stay_total_from_hotel_payload,
 )
 import backend.routers.price as price_router
@@ -420,6 +421,83 @@ class PriceApiTests(unittest.TestCase):
         self.assertEqual(events[0][0], "resolved")
         self.assertEqual(events[-1][0], "done")
         self.assertEqual(events[-1][1]["cluster_id"], uglich)
+
+    def test_modes_summary_without_offers_quotes_etrain(self) -> None:
+        doc = {
+            "meta": {
+                "to": {"name": "Mytishchi", "region": "Moscow oblast"},
+                "modes_summary": {
+                    "etrain": {"count": 7, "min_price": 139, "min_duration_min": 22},
+                    "railway": {"count": 0, "min_price": 0},
+                    "bus": {"count": 2, "min_price": 500},
+                },
+            }
+        }
+        quote = quote_from_route_doc(doc, "2026-10-15", "live")
+        self.assertIsNotNone(quote)
+        assert quote is not None
+        self.assertEqual(quote["price"], 139)
+        self.assertEqual(quote["mode"], "etrain")
+        self.assertEqual(quote["modes"], "etrain")
+        self.assertEqual(quote["duration_min"], 22)
+        self.assertFalse(quote.get("checkout_url"))
+        self.assertEqual(quote.get("checkout_ref"), {})
+        self.assertTrue(quote.get("schedule_only"))
+
+        empty_offers = {
+            "meta": {
+                "modes_summary": {
+                    "etrain": {"count": 7, "min_price": 139, "min_duration_min": 22}
+                }
+            },
+            "offers": [],
+            "variants": [],
+        }
+        from_empty = quote_from_route_doc(empty_offers, "2026-10-15", "cache")
+        self.assertIsNotNone(from_empty)
+        assert from_empty is not None
+        self.assertEqual(from_empty["price"], 139)
+
+        zero_etrain = quote_from_route_doc(
+            {"meta": {"modes_summary": {"etrain": {"count": 3, "min_price": 0}}}},
+            "2026-10-15",
+            "live",
+        )
+        self.assertIsNone(zero_etrain)
+
+        per_seat = {
+            "meta": {
+                "pricing": {"basis": "per_seat"},
+                "modes_summary": {
+                    "etrain": {"count": 7, "min_price": 139, "min_duration_min": 22}
+                },
+            }
+        }
+        two = quote_from_route_doc(per_seat, "2026-10-15", "live", adults=2)
+        self.assertIsNotNone(two)
+        assert two is not None
+        self.assertEqual(two["price"], 139)
+        self.assertNotEqual(two["price"], 278)
+        self.assertTrue(two.get("per_seat_unscaled"))
+
+        party = {
+            "meta": {
+                "pricing": {"basis": "per_seat"},
+                "modes_summary": {
+                    "etrain": {
+                        "count": 7,
+                        "min_price": 139,
+                        "min_price_party": 278,
+                        "min_duration_min": 22,
+                    }
+                },
+            }
+        }
+        party_q = quote_from_route_doc(party, "2026-10-15", "live", adults=2)
+        self.assertIsNotNone(party_q)
+        assert party_q is not None
+        self.assertEqual(party_q["price"], 278)
+        self.assertFalse(party_q.get("per_seat_unscaled"))
 
     def test_zero_rub_not_treated_as_price(self) -> None:
         self.assertTrue(price_is_absent(0))

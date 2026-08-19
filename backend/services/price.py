@@ -452,28 +452,125 @@ def query_city(row: sqlite3.Row) -> str:
     return (row["resolved_name"] or row["name"] or "").strip()
 
 
-def quote_from_route_doc(doc: Any, day: str, source: str) -> Optional[dict[str, Any]]:
+def _positive_int_price(value: Any) -> Optional[int]:
+    if price_is_absent(value):
+        return None
+    try:
+        n = int(float(value))
+    except (TypeError, ValueError):
+        return None
+    if price_is_absent(n):
+        return None
+    return n
+
+
+def _pricing_basis(meta: dict[str, Any], info: dict[str, Any]) -> str:
+    pricing = meta.get("pricing") if isinstance(meta.get("pricing"), dict) else {}
+    raw = info.get("basis") or pricing.get("basis") or ""
+    return str(raw).strip().lower()
+
+
+def _summary_mode_fare(
+    info: dict[str, Any],
+    meta: dict[str, Any],
+    adults: int,
+) -> tuple[Optional[int], bool]:
+    """Price from modes_summary. Never guess-multiply per_seat fares."""
+    unit = _positive_int_price(info.get("min_price"))
+    if unit is None:
+        return None, False
+    if adults <= 1:
+        return unit, False
+    basis = _pricing_basis(meta, info)
+    if basis in ("party_total", "party", "total"):
+        return unit, False
+    party = _positive_int_price(info.get("min_price_party"))
+    if party is None:
+        price_obj = info.get("price")
+        if isinstance(price_obj, dict):
+            party = _positive_int_price(price_obj.get("min_price_party"))
+    if party is not None:
+        return party, False
+    return unit, True
+
+
+def _duration_min(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def quote_from_modes_summary(
+    parsed: dict[str, Any],
+    meta: dict[str, Any],
+    day: str,
+    source: str,
+    adults: int,
+) -> Optional[dict[str, Any]]:
+    summary = meta.get("modes_summary") or {}
+    if not isinstance(summary, dict):
+        return None
+    best: Optional[tuple[int, str, dict[str, Any], bool]] = None
+    for mode, info in summary.items():
+        if not isinstance(info, dict):
+            continue
+        try:
+            count = int(info.get("count") or 0)
+        except (TypeError, ValueError):
+            count = 0
+        if count <= 0:
+            continue
+        price, unscaled = _summary_mode_fare(info, meta, adults)
+        if price is None:
+            continue
+        name = str(mode)
+        cand = (price, name, info, unscaled)
+        if best is None or (price, name) < (best[0], best[1]):
+            best = cand
+    if best is None:
+        return None
+    price, mode, info, unscaled = best
+    ref = checkout_ref_from_obj(info) or checkout_ref_from_obj(parsed)
+    url = checkout_url_from_obj(info) or checkout_url_from_obj(parsed)
+    return {
+        "price": price,
+        "modes": mode,
+        "mode": mode,
+        "duration_min": _duration_min(info.get("min_duration_min")),
+        "date": day,
+        "checkout_ref": ref if ref else {},
+        "checkout_url": url,
+        "source": source,
+        "per_seat_unscaled": unscaled,
+        "schedule_only": not url and not ref,
+    }
+
+
+def quote_from_route_doc(
+    doc: Any,
+    day: str,
+    source: str,
+    adults: int = 1,
+) -> Optional[dict[str, Any]]:
     parsed = unwrap_tool_result(doc) if isinstance(doc, dict) else doc
     if not isinstance(parsed, dict):
         return None
+    meta = extract_meta(parsed) if parsed else {}
     offers = payload_offers(parsed)
     offer = pick_priced_offer(offers)
     if offer is None:
-        return None
-    price = int(float(offer_amount(offer)))
-    if price_is_absent(price):
-        return None
-    meta = extract_meta(parsed) if parsed else {}
+        return quote_from_modes_summary(parsed, meta, day, source, adults)
+    price = _positive_int_price(offer_amount(offer))
+    if price is None:
+        return quote_from_modes_summary(parsed, meta, day, source, adults)
     modes = sellable_modes_from_meta(meta, offers)
     mode = str(offer.get("mode") or offer.get("transport") or "")
     if not modes:
         modes = mode
-    duration = offer.get("duration_min")
-    if duration is not None:
-        try:
-            duration = int(duration)
-        except (TypeError, ValueError):
-            duration = None
+    duration = _duration_min(offer.get("duration_min"))
     ref = offer.get("checkout_ref")
     if not isinstance(ref, dict):
         ref = {}
@@ -527,11 +624,14 @@ def live_hop_quote(
         )
         if outcome.status == "misresolved" or not ok:
             return None, "misresolved", ""
-        quote = quote_from_route_doc(doc, day, "live")
+        quote = quote_from_route_doc(doc, day, "live", adults=adults)
         if quote is None:
             offers = payload_offers(doc)
             if outcome.status == "not_sellable":
                 return None, "not_sellable", ""
+            modes = sellable_modes_from_meta(meta, offers)
+            if modes:
+                return None, "no_price", ""
             if not offers:
                 return None, "no_route", ""
             return None, "no_price", ""
@@ -551,7 +651,7 @@ def exact_cache_quote(
     cached = route_cache_payload(conn, frm["id"], to["id"], day, adults, sig)
     if not cached:
         return None
-    return quote_from_route_doc(cached, day, "cache")
+    return quote_from_route_doc(cached, day, "cache", adults=adults)
 
 
 def stale_leg_quote(
@@ -915,6 +1015,28 @@ def iter_price_events(
             payload["stale"] = True
         yield ("leg", payload)
         first_leg_sent = True
+        if quote.get("per_seat_unscaled"):
+            yield (
+                "warning",
+                warn_code(
+                    "per_seat_unscaled",
+                    to_h["id"],
+                    frm_h["id"],
+                    to_h["id"],
+                    message="from %s RUB for 1, not a party total" % price,
+                ),
+            )
+        if quote.get("schedule_only"):
+            yield (
+                "warning",
+                warn_code(
+                    "schedule_checkout",
+                    to_h["id"],
+                    frm_h["id"],
+                    to_h["id"],
+                    message="etrain fare without checkout link; buy on Tutu schedule",
+                ),
+            )
         url = resolve_checkout_url(
             mcp,
             quote.get("checkout_url"),

@@ -1,3 +1,4 @@
+import { knownIngredients } from "./catalog/ingredients";
 import { DEFAULT_RADIUS, RADIUS_STEPS } from "./ids";
 import type { BudgetScope, RadiusKm } from "./types/contract";
 
@@ -46,10 +47,12 @@ export function encodeShare(state: ShareState): string {
 export function parseShare(search: string): ShareState {
   const raw = search.startsWith("?") ? search.slice(1) : search;
   const params = new URLSearchParams(raw);
-  const ingredients = (params.get("ingredients") ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
+  const ingredients = knownIngredients(
+    (params.get("ingredients") ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+  );
   const radiusNum = Number(params.get("radius_km") ?? DEFAULT_RADIUS);
   const radius_km = isRadius(radiusNum) ? radiusNum : DEFAULT_RADIUS;
   const daysNum = Number(params.get("days"));

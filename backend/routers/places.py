@@ -26,6 +26,7 @@ class PlacesIn(BaseModel):
     ingredients: list[str] = Field(default_factory=list)
     radius_km: int = DEFAULT_RADIUS_KM
     limit: int = DEFAULT_LIMIT
+    exclude_regions: list[str] = Field(default_factory=list)
 
     class Config:
         extra = "ignore"
@@ -47,7 +48,13 @@ def post_places(body: PlacesIn) -> dict[str, Any]:
     _validate(body)
     conn = open_db()
     try:
-        return list_places(conn, body.ingredients, body.radius_km, body.limit)
+        return list_places(
+            conn,
+            body.ingredients,
+            body.radius_km,
+            body.limit,
+            exclude_regions=body.exclude_regions,
+        )
     finally:
         conn.close()
 

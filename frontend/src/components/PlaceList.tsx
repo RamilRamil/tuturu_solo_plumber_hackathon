@@ -35,7 +35,13 @@ export function PlaceList({
   return (
     <div className="place-list">
       <h2>Места</h2>
-      {loading ? <p className="loading-line">ищем кластеры без origin…</p> : null}
+      {loading ? (
+        <p className="loading-line">
+          {places.length > 0
+            ? "обновляем выдачу по выбранным областям…"
+            : "ищем кластеры без origin…"}
+        </p>
+      ) : null}
       {!loading && top.length === 0 ? (
         <p className="empty-line">
           {hasIngredients

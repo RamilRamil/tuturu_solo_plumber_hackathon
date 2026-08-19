@@ -1,13 +1,11 @@
-import type { BudgetScope } from "../types/contract";
-
 type Props = {
   enabled: boolean;
   origin: string;
+  originNeed: boolean;
   days: number;
   month: string;
   adults: number;
   childrenAges: string;
-  budgetScope: BudgetScope;
   busy: boolean;
   onAbort: () => void;
   onOrigin: (value: string) => void;
@@ -15,18 +13,17 @@ type Props = {
   onMonth: (value: string) => void;
   onAdults: (value: number) => void;
   onChildrenAges: (value: string) => void;
-  onBudgetScope: (value: BudgetScope) => void;
   onSubmit: () => void;
 };
 
 export function OriginForm({
   enabled,
   origin,
+  originNeed,
   days,
   month,
   adults,
   childrenAges,
-  budgetScope,
   busy,
   onAbort,
   onOrigin,
@@ -34,7 +31,6 @@ export function OriginForm({
   onMonth,
   onAdults,
   onChildrenAges,
-  onBudgetScope,
   onSubmit,
 }: Props) {
   return (
@@ -44,9 +40,15 @@ export function OriginForm({
         <p>Сначала выберите карточку места. Город выезда - не вход поиска.</p>
       ) : null}
       <fieldset disabled={!enabled}>
-        <label>
-          Откуда
-          <input value={origin} onChange={(event) => onOrigin(event.target.value)} />
+        <label className={originNeed ? "origin-field need" : "origin-field"}>
+          Откуда едете (для цен)
+          <input
+            value={origin}
+            autoComplete="off"
+            onChange={(event) => onOrigin(event.target.value)}
+          />
+          <span className="origin-field-hint">город выезда не влияет на подбор мест</span>
+          {originNeed ? <span className="origin-need">укажите город выезда</span> : null}
         </label>
         <label>
           Дни
@@ -77,16 +79,6 @@ export function OriginForm({
             placeholder="например 5, 8"
             onChange={(event) => onChildrenAges(event.target.value)}
           />
-        </label>
-        <label>
-          Бюджет
-          <select
-            value={budgetScope}
-            onChange={(event) => onBudgetScope(event.target.value as BudgetScope)}
-          >
-            <option value="transport">только транспорт</option>
-            <option value="all">всё</option>
-          </select>
         </label>
         <button type="button" disabled={!enabled || busy} onClick={onSubmit}>
           {busy ? "стрим…" : "Запросить цены"}

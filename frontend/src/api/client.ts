@@ -75,8 +75,11 @@ function normalizeCoverage(body: unknown, source: CoverageSource): CoveragePaylo
   const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const loadedDirect = asStringList(rec.loaded);
   const loaded = loadedDirect.length > 0 ? loadedDirect : asStringList(rec.regions_loaded);
+  const loadedSlugs = asStringList(rec.regions_loaded_slugs);
   const admin_level_4 = asStringList(rec.admin_level_4);
-  const regions = parseRegions(rec.regions, loaded);
+  const hitList = [...loaded, ...loadedSlugs];
+  const fromRegions = parseRegions(rec.regions, hitList);
+  const regions = fromRegions.length > 0 ? fromRegions : parseRegions(rec.by_region, hitList);
   const loadedFromRegions = regions
     .filter((region) => region.status === "loaded")
     .map((region) => region.label);
@@ -148,6 +151,27 @@ export type ParseResponse = {
 };
 
 const PARSE_TIMEOUT_MS = 6000;
+
+export type ParseHealth = {
+  enabled: boolean;
+  default_radius_km: number;
+};
+
+export async function fetchParseHealth(): Promise<ParseHealth> {
+  const res = await fetch("/api/parse/health", {
+    signal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    throw new Error(`parse health failed: ${res.status}`);
+  }
+  const body: unknown = await res.json();
+  const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  return {
+    enabled: rec.enabled === true,
+    default_radius_km:
+      typeof rec.default_radius_km === "number" ? rec.default_radius_km : 100,
+  };
+}
 
 export async function fetchParse(req: ParseRequest): Promise<ParseResponse> {
   const res = await fetch("/api/parse", {

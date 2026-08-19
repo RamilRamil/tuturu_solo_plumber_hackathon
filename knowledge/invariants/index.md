@@ -39,6 +39,7 @@ status: living
 - [Диски вокруг узлов, не DBSCAN](discs-not-dbscan.md)
 - [Один шов — одна реализация](single-source-seams.md)
 - [Приоритет истины — по правоте, разрешённое в одном месте](source-of-truth-precedence.md)
+- [Эталон идёт мимо LLM (AI-вход — надстройка на краю)](etalon-bypasses-llm.md)
 
 ## Ранжирование и продуктовые решения (нарушение = демо не собирается)
 - [Coverage доминирует в ранжировании (B3)](coverage-dominates-ranking.md)

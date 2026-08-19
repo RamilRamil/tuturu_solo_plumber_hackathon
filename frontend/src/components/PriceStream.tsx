@@ -37,7 +37,7 @@ function formatHotel(hotel: HotelEvent): string {
 }
 
 function formatBreakdown(data: BreakdownEvent): string {
-  return `${formatMoney(data.total)} ${data.currency} (транспорт ${formatMoney(data.transport)}, жильё ${formatMoney(data.lodging)})`;
+  return `${formatMoney(data.total)} ${data.currency} (transport ${formatMoney(data.transport)})`;
 }
 
 function sourceMark(source: "live" | "cache"): string {
@@ -132,10 +132,27 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
   const blockingWarning = events.some(
     (item) => item.event === "warning" && NO_TICKET_CODES.has(item.data.code),
   );
+  const hasPricedLeg = legs.some((item) => item.data.price > 0);
   const noTicket =
+    !hasPricedLeg &&
     checkoutItems.length === 0 &&
     !streaming &&
     (Boolean(done) || blockingWarning);
+  const scheduleOnlyFare =
+    hasPricedLeg && checkoutItems.length === 0 && !streaming && Boolean(done);
+  const scheduleFare = legs
+    .filter(
+      (item) =>
+        item.data.mode === "etrain" ||
+        (item.data.modes || "").split(",").includes("etrain"),
+    )
+    .map((item) => item.data.price);
+  const scheduleFrom =
+    scheduleFare.length > 0
+      ? Math.min(...scheduleFare)
+      : hasPricedLeg
+        ? Math.min(...legs.map((item) => item.data.price))
+        : 0;
   const detailRows = visibleDetailRows(events);
   const cacheFallbackText =
     cacheFallback && cacheFallback.event === "warning"
@@ -171,7 +188,6 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
             {formatMoney(breakdown.data.total)} {breakdown.data.currency}
           </p>
           <p>транспорт: {formatMoney(breakdown.data.transport)} {breakdown.data.currency}</p>
-          <p>жильё: {formatMoney(breakdown.data.lodging)} {breakdown.data.currency}</p>
           <p className="price-status">{breakdown.data.price_status}</p>
         </div>
       ) : null}
@@ -229,7 +245,14 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
               ? (
                   <p className="buy-none">до этого места билета нет</p>
                 )
-              : null}
+              : scheduleOnlyFare
+                ? (
+                    <p className="buy-none">
+                      электричка от {formatMoney(scheduleFrom)} {legs[0]?.data.currency ?? "RUB"},
+                      ссылка — на расписании Tutu
+                    </p>
+                  )
+                : null}
       </div>
       {events.length > 0 ? (
         <details className="sse-details">
