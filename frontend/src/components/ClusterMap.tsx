@@ -9,6 +9,9 @@ type Props = {
 };
 
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const FIT_PADDING = 56;
+const FIT_MAX_ZOOM = 11;
+const SINGLE_ZOOM = 10;
 
 function isNamedPoi(name: unknown): boolean {
   return typeof name === "string" && name.trim().length > 0;
@@ -31,22 +34,79 @@ function hubExtra(probeStatus: string): string {
   return "";
 }
 
+function isFinitePoint(lon: number, lat: number): boolean {
+  return Number.isFinite(lon) && Number.isFinite(lat);
+}
+
+function clusterPoints(place: Place): [number, number][] {
+  const points: [number, number][] = [];
+  for (const hub of place.hubs) {
+    if (isFinitePoint(hub.lon, hub.lat)) {
+      points.push([hub.lon, hub.lat]);
+    }
+  }
+  for (const obj of place.objects) {
+    if (!isNamedPoi(obj.name)) continue;
+    if (isFinitePoint(obj.lon, obj.lat)) {
+      points.push([obj.lon, obj.lat]);
+    }
+  }
+  return points;
+}
+
+function frameCluster(map: maplibregl.Map, place: Place | null, animate: boolean): void {
+  if (!place || !map.isStyleLoaded()) return;
+  const points = clusterPoints(place);
+  if (points.length === 0) return;
+  const duration = animate ? 800 : 0;
+  if (points.length === 1) {
+    map.flyTo({
+      center: points[0],
+      zoom: SINGLE_ZOOM,
+      essential: true,
+      duration,
+    });
+    return;
+  }
+  const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
+  for (let i = 1; i < points.length; i += 1) {
+    bounds.extend(points[i]);
+  }
+  map.fitBounds(bounds, {
+    padding: FIT_PADDING,
+    maxZoom: FIT_MAX_ZOOM,
+    essential: true,
+    duration,
+  });
+}
+
 export function ClusterMap({ place }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const placeRef = useRef(place);
+  placeRef.current = place;
 
   useEffect(() => {
     if (!rootRef.current || mapRef.current) return;
+    const container = rootRef.current;
     const map = new maplibregl.Map({
-      container: rootRef.current,
+      container,
       style: STYLE,
       center: [39.63, 57.4],
       zoom: 6,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+
+    const observer = new ResizeObserver(() => {
+      map.resize();
+      frameCluster(map, placeRef.current, false);
+    });
+    observer.observe(container);
+
     return () => {
+      observer.disconnect();
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
@@ -128,9 +188,7 @@ export function ClusterMap({ place }: Props) {
 
       upsert("hubs", hubFeatures, "#1f4d3a", 10);
       upsert("objects", objectFeatures, "#e04e2a", 7);
-      if (place) {
-        map.flyTo({ center: [place.center.lon, place.center.lat], zoom: 8.2, essential: true });
-      }
+      frameCluster(map, place, true);
     };
 
     if (map.isStyleLoaded()) apply();

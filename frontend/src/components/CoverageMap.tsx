@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchCoverage } from "../api/client";
-import type { ApiMode, CoveragePayload, CoverageRegion } from "../types/contract";
+import type { CoveragePayload, CoverageRegion } from "../types/contract";
 
 type Props = {
-  mode: ApiMode;
   emptyPlaces: boolean;
   hasIngredients: boolean;
 };
@@ -36,19 +35,19 @@ function splitFromLabels(data: CoveragePayload): {
   return { loaded: data.loaded, holes };
 }
 
-export function CoverageMap({ mode, emptyPlaces, hasIngredients }: Props) {
+export function CoverageMap({ emptyPlaces, hasIngredients }: Props) {
   const [data, setData] = useState<CoveragePayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setData(null);
-    fetchCoverage(mode).then((payload) => {
+    fetchCoverage().then((payload) => {
       if (!cancelled) setData(payload);
     });
     return () => {
       cancelled = true;
     };
-  }, [mode]);
+  }, []);
 
   if (!data) {
     return (
