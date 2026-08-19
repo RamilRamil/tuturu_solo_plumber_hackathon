@@ -52,10 +52,15 @@ class PlacesPerfTests(unittest.TestCase):
 
     def test_hub_filtered_list_places_finds_etalon(self) -> None:
         etalon = _load_fixture("etalon_1.json")
+        cid = etalon["cluster_id"]
+        rest = cid[2:] if cid.startswith("c:") else cid
+        self.assertNotIn(",", rest)
+        self.assertEqual(len(etalon.get("hubs") or []), 1)
         body = list_places(self.conn, ETALON_BURGER, 100, limit=20)
         ids = [p["cluster_id"] for p in body["places"]]
-        self.assertIn(etalon["cluster_id"], ids)
-        card = next(p for p in body["places"] if p["cluster_id"] == etalon["cluster_id"])
+        self.assertIn(cid, ids)
+        card = next(p for p in body["places"] if p["cluster_id"] == cid)
+        self.assertEqual(len(card["hubs"]), 1)
         self.assertEqual(set(card["coverage"]["matched"]), set(ETALON_BURGER))
         self.assertEqual(card["coverage"]["missing"], [])
 
