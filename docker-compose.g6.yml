@@ -7,6 +7,9 @@ services:
     environment:
       BURGER_DB: /app/data/burger.g10.db
       BURGER_SEED_FIXTURES: "1"
+      BURGER_LIVE_TUTU: "0"
+      BURGER_SC_PRICE_ACCEPTED: "0"
+      BURGER_COVERAGE: /app/data/coverage.json
     volumes:
       - ./data:/app/data
     expose:

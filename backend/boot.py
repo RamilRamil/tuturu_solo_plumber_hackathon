@@ -1,4 +1,4 @@
-"""Container boot: seed golden fixtures if the target DB is empty, then serve."""
+"""Container boot: optional golden seed, never overwrite a live ingest DB."""
 
 from __future__ import annotations
 
@@ -7,13 +7,32 @@ import sys
 from pathlib import Path
 
 
+def _truthy(name: str) -> bool:
+    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def seed_if_needed() -> None:
-    flag = (os.environ.get("BURGER_SEED_FIXTURES") or "1").strip().lower()
-    if flag not in ("1", "true", "yes", "on"):
+    path = Path(os.environ.get("BURGER_DB") or "data/burger.db")
+    seed = _truthy("BURGER_SEED_FIXTURES")
+    size = path.stat().st_size if path.is_file() else 0
+    print(
+        "boot: db=%s bytes=%s seed_fixtures=%s live_tutu=%s sc_price_accepted=%s"
+        % (
+            path,
+            size,
+            int(seed),
+            int(_truthy("BURGER_LIVE_TUTU")),
+            int(_truthy("BURGER_SC_PRICE_ACCEPTED")),
+        ),
+        flush=True,
+    )
+    if not seed:
         return
-    path = Path(os.environ.get("BURGER_DB") or "data/burger.g10.db")
-    if path.exists() and path.stat().st_size > 10_000:
-        print("boot: using existing db bytes=%s path=%s" % (path.stat().st_size, path), flush=True)
+    if path.name == "burger.db" and size > 10_000:
+        print("boot: refuse to seed live ingest db path=%s" % path, flush=True)
+        return
+    if size > 10_000:
+        print("boot: using existing db", flush=True)
         return
     from lib.load_fixtures import load_golden_fixtures
     from lib.models import connect
