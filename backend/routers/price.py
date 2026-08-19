@@ -55,8 +55,8 @@ def _load_cluster_or_404(cluster_id: str) -> None:
     mcp = open_mcp()
     try:
         load_cluster_row(mcp.conn, cluster_id)
-    except UnknownCluster:
-        raise HTTPException(status_code=404, detail="cluster not found") from None
+    except UnknownCluster as exc:
+        raise HTTPException(status_code=404, detail=exc.reason) from None
     finally:
         mcp.close()
 
