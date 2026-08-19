@@ -1,0 +1,29 @@
+{
+  "provenance": "fixture-confirmed",
+  "source": "tutu-mcp-field-test.md §2 §6",
+  "note": "Query Rostov Veliky resolves correctly. Guard must be GREEN vs Yaroslavl oblast.",
+  "query": "Ростов Великий",
+  "origin": "Ярославль",
+  "expected_name": "Ростов Великий",
+  "expected_region": "Ярославская область",
+  "want_ok": true,
+  "payload": {
+    "meta": {
+      "from": {"name": "Ярославль", "region": "городской округ Ярославль, Ярославская область", "geo_id": "fixture-yar"},
+      "to": {"name": "Ростов Великий", "region": "городской округ Ростов, Ярославская область", "geo_id": "fixture-rv"},
+      "total_matched": 10,
+      "modes_summary": {
+        "railway": {"count": 5},
+        "etrain": {"count": 5},
+        "bus": {"count": 0},
+        "avia": {"count": 0}
+      },
+      "unavailable": [],
+      "also_named": []
+    },
+    "offers": [
+      {"mode": "railway", "price": 659},
+      {"mode": "etrain", "price": 659}
+    ]
+  }
+}

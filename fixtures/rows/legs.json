@@ -1,0 +1,68 @@
+[
+  {
+    "origin_hub": "Москва|Москва",
+    "dest_hub": "Ярославль|Ярославская область",
+    "date_probed": "2026-10-09",
+    "modes": "avia,bus,railway",
+    "min_price": 1035,
+    "duration_min": null,
+    "latency_ms": 3000,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "ok"
+  },
+  {
+    "origin_hub": "Ярославль|Ярославская область",
+    "dest_hub": "Ростов|Ярославская область",
+    "date_probed": "2026-10-09",
+    "modes": "etrain,railway",
+    "min_price": 659,
+    "duration_min": null,
+    "latency_ms": 3000,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "ok"
+  },
+  {
+    "origin_hub": "Ростов|Ярославская область",
+    "dest_hub": "Москва|Москва",
+    "date_probed": "2026-10-11",
+    "modes": "bus,railway",
+    "min_price": 898,
+    "duration_min": null,
+    "latency_ms": 3000,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "ok"
+  },
+  {
+    "origin_hub": "Тверь|Тверская область",
+    "dest_hub": "Торжок|Тверская область",
+    "date_probed": "2026-10-09",
+    "modes": "etrain",
+    "min_price": 276,
+    "duration_min": null,
+    "latency_ms": 3000,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "ok"
+  },
+  {
+    "origin_hub": "Торжок|Тверская область",
+    "dest_hub": "Москва|Москва",
+    "date_probed": "2026-10-09",
+    "modes": "",
+    "min_price": null,
+    "duration_min": null,
+    "latency_ms": 800,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "no_route"
+  },
+  {
+    "origin_hub": "Владимир|Владимирская область",
+    "dest_hub": "Суздаль|Владимирская область",
+    "date_probed": "2026-10-09",
+    "modes": "",
+    "min_price": null,
+    "duration_min": null,
+    "latency_ms": 800,
+    "checked_at": "2026-08-19T00:00:00Z",
+    "status": "no_route"
+  }
+]

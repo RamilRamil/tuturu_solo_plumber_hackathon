@@ -1,0 +1,26 @@
+[
+  {
+    "tool": "search_multitransport",
+    "args_json": {"origin": "Ярославль", "destination": "Ростов", "departure_date": "2026-10-09", "adults": 1, "page_size": 10},
+    "payload_file": "raw/g5_yaroslavl_rostov.json",
+    "fetched_at": "2026-08-19T11:30:02Z"
+  },
+  {
+    "tool": "search_multitransport",
+    "args_json": {"origin": "Ярославль", "destination": "Ростов Великий", "departure_date": "2026-10-09", "adults": 1, "page_size": 10},
+    "payload_file": "raw/g5_yaroslavl_rostov_veliky.json",
+    "fetched_at": "2026-08-19T11:30:06Z"
+  },
+  {
+    "tool": "search_multitransport",
+    "args_json": {"origin": "Москва", "destination": "Великий Новгород", "departure_date": "2026-10-09", "adults": 1, "page_size": 10},
+    "payload_file": "raw/g5_moscow_veliky_novgorod.json",
+    "fetched_at": "2026-08-19T11:30:07Z"
+  },
+  {
+    "tool": "search_multitransport",
+    "args_json": {"origin": "Москва", "destination": "Борисоглебский", "departure_date": "2026-10-09", "adults": 1, "page_size": 1},
+    "payload_file": "g3_outside_handbook.json",
+    "fetched_at": "2026-08-19T00:00:00Z"
+  }
+]

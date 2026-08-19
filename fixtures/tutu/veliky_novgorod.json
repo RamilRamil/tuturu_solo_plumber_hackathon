@@ -1,0 +1,28 @@
+{
+  "provenance": "fixture-confirmed",
+  "source": "tutu-mcp-field-test.md §2",
+  "note": "Query Veliky Novgorod resolves to Saint Petersburg. Guard RED vs Novgorod oblast.",
+  "query": "Великий Новгород",
+  "origin": "Москва",
+  "expected_name": "Великий Новгород",
+  "expected_region": "Новгородская область",
+  "want_ok": false,
+  "payload": {
+    "meta": {
+      "from": {"name": "Москва", "region": "Москва", "geo_id": "fixture-mow"},
+      "to": {"name": "Санкт-Петербург", "region": "Санкт-Петербург", "geo_id": "fixture-spb"},
+      "total_matched": 10,
+      "modes_summary": {
+        "railway": {"count": 10},
+        "avia": {"count": 4},
+        "bus": {"count": 2},
+        "etrain": {"count": 0}
+      },
+      "unavailable": [],
+      "also_named": []
+    },
+    "offers": [
+      {"mode": "railway", "price": 1800}
+    ]
+  }
+}

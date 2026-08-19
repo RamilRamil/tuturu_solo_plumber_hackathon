@@ -1,0 +1,92 @@
+{
+  "gate": "G5",
+  "live": true,
+  "host": "local-mac-not-vps",
+  "ts": "2026-08-19T11:31:58Z",
+  "timeout_s": 45.0,
+  "departure_date": "2026-10-09",
+  "waves_per_n": 8,
+  "extra_waves_at_8": 12,
+  "page_size_bench": 1,
+  "summary_by_n": {
+    "1": {
+      "waves": 8,
+      "requests_ok": 8,
+      "requests_fail": 0,
+      "success_rate": 1.0,
+      "wall_ms": {
+        "median": 144.3,
+        "p95": 6505.6,
+        "max": 6505.6
+      },
+      "per_request_ms": {
+        "median": 142.1,
+        "p95": 6504.1,
+        "max": 6504.1
+      },
+      "errors": []
+    },
+    "2": {
+      "waves": 8,
+      "requests_ok": 16,
+      "requests_fail": 0,
+      "success_rate": 1.0,
+      "wall_ms": {
+        "median": 1247.9,
+        "p95": 7187.1,
+        "max": 7187.1
+      },
+      "per_request_ms": {
+        "median": 201.5,
+        "p95": 1685.8,
+        "max": 7183.8
+      },
+      "errors": []
+    },
+    "4": {
+      "waves": 8,
+      "requests_ok": 32,
+      "requests_fail": 0,
+      "success_rate": 1.0,
+      "wall_ms": {
+        "median": 1479.3,
+        "p95": 7011.4,
+        "max": 7011.4
+      },
+      "per_request_ms": {
+        "median": 172.95,
+        "p95": 1843.2,
+        "max": 7008.2
+      },
+      "errors": []
+    },
+    "8": {
+      "waves": 20,
+      "requests_ok": 160,
+      "requests_fail": 0,
+      "success_rate": 1.0,
+      "wall_ms": {
+        "median": 1798.6,
+        "p95": 2591.2,
+        "max": 11540.1
+      },
+      "per_request_ms": {
+        "median": 225.5,
+        "p95": 2257.2,
+        "max": 11537.2
+      },
+      "errors": []
+    }
+  },
+  "fact_concurrency": 8,
+  "product_cap": 4,
+  "product_cap_rule": "min(4, fact)",
+  "pick_notes": [
+    "naive wall>=0.7*n*per_req_median falsely flagged n=2 as serial because cache (~140ms) dominates per-request median while wall is the slow sibling",
+    "override: wall_ms of each wave tracks max(latencies) not sum; success_rate=1.0 at n=8 (160/160)",
+    "n=8 w=0 wall_ms=11540.1 max_lat=11537.2 (parallel)",
+    "n=4 w=0 wall_ms=7011.4 max_lat=7008.2 (parallel)",
+    "fact=8 product_cap=min(4,8)=4"
+  ],
+  "r4_fixture": "fixtures/raw/g5_r4_moscow_yaroslavl.json"
+}

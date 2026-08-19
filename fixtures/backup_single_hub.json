@@ -1,0 +1,15 @@
+{
+  "provenance": "fixture-confirmed",
+  "source": "open-issues B4; F13 ancient_temple+ruins; NOT live-probed (R4)",
+  "price_status": "fixture-confirmed",
+  "cluster_id": "c:Ярославль|Ярославская область",
+  "title": "Ярославль",
+  "ingredients": ["ancient_temple", "ruins"],
+  "radius_km": 100,
+  "origin": "Москва",
+  "month": "2026-10",
+  "days": 3,
+  "adults": 1,
+  "hubs": ["Ярославль|Ярославская область"],
+  "note": "Backup single-hub burger. Survives if pairs slip. R4: not live-checked; keep fixture-confirmed."
+}

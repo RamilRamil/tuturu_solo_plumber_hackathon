@@ -1,0 +1,62 @@
+[
+  {
+    "id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
+    "radius_km": 50,
+    "hub_ids": "[\"Ростов|Ярославская область\",\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль и Ростов Великий",
+    "center_lat": 57.4,
+    "center_lon": 39.63,
+    "diameter_km": 58,
+    "ingredient_mask": "ancient_temple,industrial_museum"
+  },
+  {
+    "id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
+    "radius_km": 100,
+    "hub_ids": "[\"Ростов|Ярославская область\",\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль и Ростов Великий",
+    "center_lat": 57.4,
+    "center_lon": 39.63,
+    "diameter_km": 58,
+    "ingredient_mask": "ancient_temple,industrial_museum"
+  },
+  {
+    "id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
+    "radius_km": 150,
+    "hub_ids": "[\"Ростов|Ярославская область\",\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль и Ростов Великий",
+    "center_lat": 57.4,
+    "center_lon": 39.63,
+    "diameter_km": 58,
+    "ingredient_mask": "ancient_temple,industrial_museum"
+  },
+  {
+    "id": "c:Ярославль|Ярославская область",
+    "radius_km": 50,
+    "hub_ids": "[\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль",
+    "center_lat": 57.61667,
+    "center_lon": 39.85,
+    "diameter_km": 12,
+    "ingredient_mask": "ancient_temple,ruins"
+  },
+  {
+    "id": "c:Ярославль|Ярославская область",
+    "radius_km": 100,
+    "hub_ids": "[\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль",
+    "center_lat": 57.61667,
+    "center_lon": 39.85,
+    "diameter_km": 12,
+    "ingredient_mask": "ancient_temple,ruins"
+  },
+  {
+    "id": "c:Ярославль|Ярославская область",
+    "radius_km": 150,
+    "hub_ids": "[\"Ярославль|Ярославская область\"]",
+    "title": "Ярославль",
+    "center_lat": 57.61667,
+    "center_lon": 39.85,
+    "diameter_km": 12,
+    "ingredient_mask": "ancient_temple,ruins"
+  }
+]

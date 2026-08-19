@@ -1,0 +1,18 @@
+[
+  {
+    "hub_id": "Ярославль|Ярославская область",
+    "check_in": "2026-10-09",
+    "check_out": "2026-10-10",
+    "adults": 1,
+    "payload_json": "{\"meta\":{\"resolved_geo\":{\"name\":\"Ярославль\",\"region\":\"Ярославская область\"}},\"hotels\":[{\"min_price\":750,\"price_basis\":\"stay_total\",\"stay\":{\"nights\":1}}],\"price_status\":\"fixture-confirmed\"}",
+    "fetched_at": "2026-08-19T00:00:00Z"
+  },
+  {
+    "hub_id": "Ростов|Ярославская область",
+    "check_in": "2026-10-10",
+    "check_out": "2026-10-11",
+    "adults": 1,
+    "payload_json": "{\"meta\":{\"resolved_geo\":{\"name\":\"Ростов Великий\",\"region\":\"Ярославская область\"}},\"hotels\":[{\"min_price\":1000,\"price_basis\":\"stay_total\",\"stay\":{\"nights\":1}}],\"price_status\":\"fixture-confirmed\"}",
+    "fetched_at": "2026-08-19T00:00:00Z"
+  }
+]

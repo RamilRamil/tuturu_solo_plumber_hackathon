@@ -1,0 +1,19 @@
+services:
+  backend:
+    container_name: burger-g6-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      BURGER_DB: /app/data/burger.db
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/g6.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend

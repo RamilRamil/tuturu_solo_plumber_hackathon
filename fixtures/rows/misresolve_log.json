@@ -1,0 +1,18 @@
+[
+  {
+    "requested": "Ростов",
+    "got_name": "Ростов-на-Дону",
+    "got_region": "Ростовская область",
+    "expected_region": "Ярославская область",
+    "expected_region_source": "cities_ru.subject",
+    "at": "2026-08-19T00:00:00Z"
+  },
+  {
+    "requested": "Великий Новгород",
+    "got_name": "Санкт-Петербург",
+    "got_region": "Санкт-Петербург",
+    "expected_region": "Новгородская область",
+    "expected_region_source": "cities_ru.subject",
+    "at": "2026-08-19T00:00:00Z"
+  }
+]

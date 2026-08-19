@@ -1,0 +1,78 @@
+{
+  "provenance": {
+    "gate": "G5",
+    "live": true,
+    "note": "Yaroslavl -> Rostov (expected misresolve Rostov-on-Don)",
+    "endpoint": "https://mcp.tutu.ru/mcp",
+    "ts": "2026-08-19T11:30:02Z",
+    "latency_ms": 920.6,
+    "http_status": 200,
+    "content_type": "application/json",
+    "origin": "Ярославль",
+    "destination": "Ростов",
+    "departure_date": "2026-10-09",
+    "adults": 1,
+    "page_size": 10,
+    "price_zero_rub_means_absence": true,
+    "timeout_s": 45.0,
+    "host": "local-mac-not-vps"
+  },
+  "brief": {
+    "from_name": "Ярославль",
+    "from_region": "городской округ Ярославль, Ярославская область",
+    "from_geo_id": "2657276",
+    "to_name": "Ростов-на-Дону",
+    "to_region": "городской округ Ростов-на-Дону, Ростовская область",
+    "to_geo_id": "2656912",
+    "modes_summary": {
+      "avia": {
+        "count": 0,
+        "min_price": null,
+        "min_duration_min": null
+      },
+      "railway": {
+        "count": 1,
+        "min_price": 4978.08,
+        "min_duration_min": 1570,
+        "cashback": {
+          "rate_pct": 3.0,
+          "applies_to": "all_fares",
+          "note": "Tutu loyalty points credited to the buyer's Tutu account after payment. NOT a discount: every `price` here is the full amount payable.",
+          "scope": "mode_page"
+        }
+      },
+      "bus": {
+        "count": 0,
+        "min_price": null,
+        "min_duration_min": null
+      },
+      "etrain": {
+        "count": 0,
+        "min_price": null,
+        "min_duration_min": null
+      }
+    },
+    "unavailable": [],
+    "total_matched": null,
+    "has_more": false,
+    "prices": {
+      "zero": 0,
+      "nonzero": 0
+    }
+  },
+  "ok": true,
+  "error": null,
+  "mcp": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"variants\":[{\"offer_id\":\"9401055a743ddde32f5e20b04134eafc\",\"transport\":\"railway\",\"price\":{\"amount\":4978.08,\"currency\":\"RUB\"},\"duration_min\":1570,\"carriers\":[\"ФПК\"],\"search_results_url\":\"https://www.tutu.ru/poezda/rasp_d.php?date=09.10.2026&nnst1=2010000&nnst2=2064000\",\"segments_count\":1,\"checkout_url\":\"https://www.tutu.ru/poezda/order/?departure_st=2657276&arrival_st=2656912&dep_st=2010001&arr_st=2064001&tn=079%D0%AF&date=09.10.2026+21:30:00\",\"departure_at\":\"2026-10-09T21:30:00+03:00\",\"arrival_at\":\"2026-10-10T23:40:00+03:00\",\"legs\":[{\"label\":\"outbound\",\"from\":\"Ярославль — Ярославль-Главный (2010001)\",\"to\":\"Ростов-на-Дону — Ростов-Главный (2064001)\",\"departure_at\":\"2026-10-09T21:30:00+03:00\",\"arrival_at\":\"2026-10-10T23:40:00+03:00\",\"duration_min\":1570,\"segments\":[{\"from\":\"Ярославль — Ярославль-Главный (2010001)\",\"to\":\"Ростов-на-Дону — Ростов-Главный (2064001)\",\"departure_at\":\"2026-10-09T21:30:00+03:00\",\"arrival_at\":\"2026-10-10T23:40:00+03:00\",\"duration_min\":1570,\"carrier\":\"ФПК\",\"voyage_no\":\"079Я\",\"from_geo_point_id\":2958877,\"to_geo_point_id\":2961516}]}],\"checkout_ref\":{\"transport\":\"railway\",\"departure_city_id\":2657276,\"arrival_city_id\":2656912,\"departure_station_code\":\"2010001\",\"arrival_station_code\":\"2064001\",\"train_number\":\"079Я\",\"departure_at\":\"2026-10-09T21:30:00+03:00\",\"departure_geo_point_id\":2958877,\"arrival_geo_point_id\":2961516,\"offer_hash\":\"9401055a743ddde32f5e20b04134eafc\",\"segment_hash\":\"a89e82e46a1d7c0a49bd914bac1b55b4\",\"search_id\":\"CD708E2A-FA19-4534-B441-7A260861E61D\",\"result_id\":\"bd3b90af-79e4-5d8e-9027-c1377572de3b\",\"card_id\":\"da8bf0510cd5998de1d013f05a81c484\"},\"details_ref\":{\"transport\":\"railway\",\"source\":\"seats-gateway.seats-by-params\",\"departure_station_code\":\"2010001\",\"arrival_station_code\":\"2064001\",\"train_number\":\"079Я\",\"departure_at\":\"2026-10-09T21:30:00+03:00\",\"price\":{\"amount\":4978.08,\"currency\":\"RUB\"},\"title\":\"Поезд 079Я\",\"carriers\":[\"ФПК\"],\"duration_min\":1570,\"arrival_at\":\"2026-10-10T23:40:00+03:00\",\"review_summary\":{\"rating\":8.4,\"review_count\":509,\"label\":\"⭐ 8.4/10 · 509 отзывов\",\"source\":\"offers-api.feedback\",\"scope\":\"train\",\"subject\":\"079Я\",\"scale\":10,\"feedback_key\":\"079Я\"}},\"review_summary\":{\"rating\":8.4,\"review_count\":509,\"label\":\"⭐ 8.4/10 · 509 отзывов\",\"source\":\"offers-api.feedback\",\"scope\":\"train\",\"subject\":\"079Я\",\"scale\":10,\"feedback_key\":\"079Я\"},\"fares\":{\"count\":29,\"price_from\":4978.08,\"price_to\":19710.48,\"currency\":\"RUB\",\"refundable_count\":24,\"changeable_count\":0,\"seat_categories\":{\"RESERVED_SEAT\":{\"count\":12,\"price_from\":4978.08},\"COMPARTMENT\":{\"count\":16,\"price_from\":6612.92},\"LUX\":{\"count\":1,\"price_from\":19710.48}}}}],\"meta\":{\"from\":{\"name\":\"Ярославль\",\"geo_id\":\"2657276\",\"region\":\"городской округ Ярославль, Ярославская область\",\"iata\":\"IAR\"},\"to\":{\"name\":\"Ростов-на-Дону\",\"geo_id\":\"2656912\",\"region\":\"городской округ Ростов-на-Дону, Ростовская область\",\"iata\":\"ROV\"},\"optimize_for\":\"price\",\"modes_requested\":[\"avia\",\"railway\",\"bus\",\"etrain\"],\"modes_summary\":{\"avia\":{\"count\":0,\"min_price\":null,\"min_duration_min\":null},\"railway\":{\"count\":1,\"min_price\":4978.08,\"min_duration_min\":1570,\"cashback\":{\"rate_pct\":3.0,\"applies_to\":\"all_fares\",\"note\":\"Tutu loyalty points credited to the buyer's Tutu account after payment. NOT a discount: every `price` here is the full amount payable.\",\"scope\":\"mode_page\"}},\"bus\":{\"count\":0,\"min_price\":null,\"min_duration_min\":null},\"etrain\":{\"count\":0,\"min_price\":null,\"min_duration_min\":null}},\"unavailable\":[],\"page\":1,\"page_size\":10,\"total_returned\":1,\"has_more\":false}}"
+        }
+      ],
+      "isError": false
+    }
+  }
+}

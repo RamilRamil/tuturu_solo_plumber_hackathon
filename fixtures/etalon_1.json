@@ -1,0 +1,33 @@
+{
+  "provenance": "fixture-confirmed",
+  "source": "tutu-mcp-field-test.md §8; NOT SC-price",
+  "price_status": "fixture-confirmed",
+  "cluster_id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
+  "title": "Ярославль и Ростов Великий",
+  "ingredients": ["ancient_temple", "industrial_museum"],
+  "radius_km": 100,
+  "origin": "Москва",
+  "month": "2026-10",
+  "days": 3,
+  "adults": 1,
+  "legs": [
+    {"from": "Москва", "to": "Ярославль", "price": 1035},
+    {"from": "Ярославль", "to": "Ростов Великий", "price": 659},
+    {"from": "Ростов Великий", "to": "Москва", "price": 898}
+  ],
+  "hotels": [
+    {"city": "Ярославль", "min_price": 750, "nights": 1, "price_basis": "stay_total"},
+    {"city": "Ростов Великий", "min_price": 1000, "nights": 1, "price_basis": "stay_total"}
+  ],
+  "breakdown": {
+    "transport": 2592,
+    "lodging": 1750,
+    "total": 4342,
+    "currency": "RUB",
+    "price_status": "fixture-confirmed"
+  },
+  "acceptance": {
+    "sc_ranking": "pair cluster_id MUST appear in top-5 on live disc pass with empty cluster table (offline, hard). A single-hub Yaroslavl with the same coverage is a legal complete answer and MAY rank above the pair; do not force pair to rank 1 via weights. Demo script selects the pair card for phase-2 price.",
+    "sc_price": "do not use 4342 as live pass; live Tutu run still required"
+  }
+}

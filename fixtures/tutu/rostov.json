@@ -1,0 +1,33 @@
+{
+  "provenance": "fixture-confirmed",
+  "source": "tutu-mcp-field-test.md §2",
+  "note": "Query Rostov resolves to Rostov-on-Don. Guard must be RED vs Yaroslavl oblast.",
+  "query": "Ростов",
+  "origin": "Ярославль",
+  "expected_name": "Ростов",
+  "expected_region": "Ярославская область",
+  "want_ok": false,
+  "payload": {
+    "meta": {
+      "from": {"name": "Ярославль", "region": "Ярославская область", "geo_id": "fixture-yar"},
+      "to": {"name": "Ростов-на-Дону", "region": "Ростовская область", "geo_id": "fixture-rnd"},
+      "total_matched": 6,
+      "modes_summary": {
+        "bus": {"count": 6},
+        "etrain": {"count": 5},
+        "railway": {"count": 0},
+        "avia": {"count": 0}
+      },
+      "unavailable": [],
+      "also_named": []
+    },
+    "offers": [
+      {"mode": "bus", "price": 1000},
+      {"mode": "etrain", "price": 0},
+      {"mode": "etrain", "price": 0},
+      {"mode": "etrain", "price": 0},
+      {"mode": "etrain", "price": 0},
+      {"mode": "etrain", "price": 0}
+    ]
+  }
+}

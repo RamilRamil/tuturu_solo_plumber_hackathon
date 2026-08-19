@@ -1,0 +1,374 @@
+# Словарь ингредиентов «бургера»
+#
+# Назначение: определяет, что вытаскивать из дампа OSM (russia-latest.osm.pbf)
+# и как раскладывать объекты по категориям меню.
+#
+# density_measured — фактический замер по Ярославской области (2026-08-19).
+#   Ярославская выбрана как средняя по стране: не столица, не Кавказ, не Север.
+#   null = не измерялось, замерить при ингесте по 4-5 контрастным регионам.
+#
+# density_label — что показывать в UI рядом с карточкой ингредиента.
+#   dense  — сотни на регион, комбинируется с чем угодно
+#   medium — десятки на регион
+#   rare   — единицы на регион, комбинация двух rare почти всегда пуста
+#   absent_in_region — существует только в отдельных регионах (горы, море, пещеры)
+#
+# ВАЖНО: density_label обязан быть виден пользователю в меню. Иначе он соберёт
+# комбинацию, которой физически не существует, и решит, что сервис сломан.
+
+version: 1
+generated: 2026-08-19
+source_region_for_density: RU-YAR
+
+groups:
+  - id: heritage
+    name_ru: Древности и вера
+  - id: industry
+    name_ru: Индустрия и техника
+  - id: nature
+    name_ru: Природа
+  - id: culture
+    name_ru: Культура
+  - id: food_body
+    name_ru: Еда и тело
+  - id: shopping
+    name_ru: Покупки
+  - id: activity
+    name_ru: Активность
+
+ingredients:
+
+  # ---------- heritage ----------
+
+  - id: ancient_temple
+    name_ru: Храмы и монастыри
+    group: heritage
+    osm:
+      - building=church|cathedral|chapel|monastery
+      - historic=church|monastery|chapel|cathedral
+      - amenity=place_of_worship + religion=christian
+    wikidata_classes: [Q16970, Q44613]   # церковь, монастырь
+    density_measured: 370
+    density_label: dense
+    notes: >
+      Самая плотная категория. start_date заполнен у 26 % церквей —
+      выше, чем средние 17 % по всем категориям.
+
+  - id: fortress
+    name_ru: Кремли и крепости
+    group: heritage
+    osm:
+      - historic=castle|fort|citadel|city_wall|city_gate
+    wikidata_classes: [Q23413, Q57831]
+    density_measured: 12
+    density_label: medium
+
+  - id: manor
+    name_ru: Усадьбы и дворцы
+    group: heritage
+    osm:
+      - historic=manor|palace
+    wikidata_classes: [Q879050, Q16560]
+    density_measured: 8
+    density_label: rare
+
+  - id: archaeology
+    name_ru: Археология и городища
+    group: heritage
+    osm:
+      - historic=archaeological_site|tomb|rune_stone
+    density_measured: 3
+    density_label: rare
+    notes: >
+      По стране 6 914 объектов, но распределены крайне неравномерно —
+      в средней полосе почти пусто, основная масса на юге и в Сибири.
+
+  # ---------- industry ----------
+
+  - id: industrial_site
+    name_ru: Действующие заводы
+    group: industry
+    osm:
+      - man_made=works
+    density_measured: 59
+    density_label: medium
+    require_name: true
+    disclaimer: "доступ не проверен"
+    notes: >
+      ВНИМАНИЕ. Это НЕ туристические объекты. Реальные названия в выдаче:
+      «ООО Цвет и Стиль», «НПК Протэкт», «Мышкинская птицефабрика».
+      21 из 59 объектов вообще без названия — безымянные отбрасывать
+      (require_name). Тег о возможности экскурсии в OSM отсутствует
+      как класс, поэтому дисклеймер обязателен в карточке.
+
+  - id: industrial_museum
+    name_ru: Музеи техники и промышленности
+    group: industry
+    osm:
+      - museum=technology|industry|mining|railway|military
+      - historic=mine
+      - man_made=mineshaft
+    density_measured: 1
+    density_label: rare
+    notes: >
+      По всей России 1 579 объектов вместе с историческими шахтами.
+      Честная замена «промышленному туризму»: это «музей про промышленность»,
+      а не «экскурсия на действующий завод».
+
+  - id: ruins
+    name_ru: Заброшки и руины
+    group: industry
+    osm:
+      - historic=ruins
+      - building=ruins
+      - ruins=yes
+    density_measured: 76
+    density_label: medium
+
+  - id: railway_heritage
+    name_ru: Железные дороги и паровозы
+    group: industry
+    osm:
+      - historic=locomotive
+      - museum=railway
+      - railway=abandoned + name
+    density_measured: null
+    density_label: rare
+
+  - id: quarry
+    name_ru: Шахты и карьеры
+    group: industry
+    osm:
+      - historic=mine
+      - man_made=mineshaft
+      - landuse=quarry + name
+    density_measured: null
+    density_label: null
+
+  # ---------- nature ----------
+
+  - id: viewpoint
+    name_ru: Смотровые и вершины
+    group: nature
+    osm:
+      - tourism=viewpoint
+      - natural=peak + name
+    density_measured: 35
+    density_label: medium
+
+  - id: waterfall
+    name_ru: Водопады и пороги
+    group: nature
+    osm:
+      - waterway=waterfall
+      - natural=waterfall
+    density_measured: 0
+    density_label: absent_in_region
+    notes: В средней полосе ноль. Живёт на Кавказе, Урале, Карелии, Алтае.
+
+  - id: cave
+    name_ru: Пещеры
+    group: nature
+    osm:
+      - natural=cave_entrance
+    density_measured: 0
+    density_label: absent_in_region
+
+  - id: spring
+    name_ru: Источники
+    group: nature
+    osm:
+      - natural=spring|hot_spring
+    density_measured: 74
+    density_label: medium
+    notes: >
+      Осторожно: natural=spring это любой родник, включая бытовые.
+      Для «термальных» нужен hot_spring отдельно — он гораздо реже.
+
+  - id: reserve
+    name_ru: Заповедники и нацпарки
+    group: nature
+    osm:
+      - leisure=nature_reserve
+      - boundary=protected_area
+    density_measured: 3
+    density_label: rare
+
+  - id: beach
+    name_ru: Озёра и пляжи
+    group: nature
+    osm:
+      - natural=beach
+      - leisure=beach_resort
+    density_measured: null
+    density_label: null
+
+  # ---------- culture ----------
+
+  - id: museum_any
+    name_ru: Музеи
+    group: culture
+    osm:
+      - tourism=museum
+    density_measured: 164
+    density_label: dense
+    notes: >
+      Подтип museum=* не заполнен у 153 из 164. Делить музеи на
+      художественные / краеведческие / технические ПО ДАННЫМ НЕЛЬЗЯ.
+      Либо оставляем одну общую категорию, либо классифицируем по
+      названию локально после выгрузки (regex по name на Overpass
+      не проходит по таймауту — только офлайн).
+
+  - id: gallery
+    name_ru: Галереи
+    group: culture
+    osm:
+      - tourism=gallery
+      - museum=art
+    density_measured: null
+    density_label: null
+
+  - id: theatre
+    name_ru: Театры и концертные залы
+    group: culture
+    osm:
+      - amenity=theatre|arts_centre
+    density_measured: null
+    density_label: null
+
+  - id: artwork
+    name_ru: Арт-объекты и стрит-арт
+    group: culture
+    osm:
+      - tourism=artwork
+    density_measured: null
+    density_label: null
+
+  # ---------- food_body ----------
+
+  - id: market
+    name_ru: Рынки и гастромаркеты
+    group: food_body
+    osm:
+      - amenity=marketplace
+    density_measured: null
+    density_label: null
+
+  - id: local_food
+    name_ru: Локальная гастрономия
+    group: food_body
+    osm:
+      - amenity=restaurant + cuisine=russian|regional|georgian|tatar
+    density_measured: null
+    density_label: null
+    notes: >
+      Риск: ресторанов много, но «локальность» через cuisine — слабый
+      признак. Категория может оказаться шумной. Проверить до включения.
+
+  - id: brewery
+    name_ru: Винодельни, пивоварни, сыроварни
+    group: food_body
+    osm:
+      - craft=winery|brewery|cheese|distillery
+    density_measured: null
+    density_label: null
+
+  - id: banya
+    name_ru: Бани, термы, спа
+    group: food_body
+    osm:
+      - amenity=public_bath
+      - leisure=sauna
+      - natural=hot_spring
+    density_measured: null
+    density_label: null
+
+  # ---------- shopping ----------
+
+  - id: crafts
+    name_ru: Ремёсла и промыслы
+    group: shopping
+    osm:
+      - craft=pottery|blacksmith|basket_maker|jeweller
+      - shop=craft
+    density_measured: null
+    density_label: null
+
+  - id: antiques
+    name_ru: Антиквариат и барахолки
+    group: shopping
+    osm:
+      - shop=antiques|second_hand
+    density_measured: null
+    density_label: null
+
+  - id: outlet
+    name_ru: Аутлеты и фабричные магазины
+    group: shopping
+    osm:
+      - shop=mall|outlet|factory_outlet
+    density_measured: null
+    density_label: null
+    notes: >
+      «Шоппинг-туризм» повторяет ловушку промтуризма: shop=mall это ТЦ,
+      а ТЦ не повод ехать в другой город. Реальный шоппинг-туризм —
+      это crafts, antiques и outlet, а не моллы.
+
+  # ---------- activity ----------
+
+  - id: ski
+    name_ru: Горнолыжка
+    group: activity
+    osm:
+      - "piste:type=downhill"
+      - landuse=winter_sports
+    density_measured: null
+    density_label: null
+
+  - id: hiking
+    name_ru: Треккинг и веломаршруты
+    group: activity
+    osm:
+      - route=hiking|bicycle
+    density_measured: null
+    density_label: null
+    notes: Это relations, не точки. Центроид считать отдельно.
+
+
+# ---------------------------------------------------------------------------
+# Общие правила разбора
+# ---------------------------------------------------------------------------
+
+parsing_rules:
+
+  name:
+    coverage: 0.83
+    rule: >
+      Объекты без name показываем на карте, но не в тексте карточки.
+      Исключение — industrial_site, где безымянные отбрасываются полностью.
+
+  start_date:
+    coverage: 0.17          # 0.26 для церквей
+    formats_seen: ["1801", "1725..1836", "after 1600", "C18", "~1750"]
+    rule: >
+      Нужен парсер в пару (from, to). Простое int() падает на большинстве
+      реальных значений. Неразобранное значение сохранять в start_date_raw
+      и считать датой неизвестной, а не нулевой.
+
+  opening_hours:
+    coverage: 0.12
+    rule: >
+      Три состояния: open / closed / unknown. Нет тега = unknown.
+      Трактовка «нет тега = закрыто» отсекает 88 % объектов — запрещена.
+
+  heritage:
+    coverage: 0.002
+    rule: Как признак значимости непригоден. Не использовать.
+
+  significance:
+    formula: >
+      3*has_wikidata + 2*has_wikipedia + 2*has_start_date
+      + 1*has_name + min(len(tags)/5, 2)
+    rule: >
+      Тег wikidata заполнен у 4,4 % объектов, поэтому одиночным
+      признаком ранжирования быть не может — только слагаемым.
