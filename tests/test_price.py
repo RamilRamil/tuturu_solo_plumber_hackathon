@@ -26,6 +26,7 @@ from backend.services.price import (
     ASCII_ORIGIN_GEO,
     PRICE_STATUS,
     UnknownCluster,
+    cache_leg_issue,
     directed_leg,
     first_window_start,
     later_window_starts,
@@ -33,6 +34,8 @@ from backend.services.price import (
     load_cluster_row,
     match_origin_hub,
     open_mcp,
+    parse_cluster_id_hubs,
+    pick_priced_offer,
     stay_total_from_hotel_payload,
 )
 import backend.routers.price as price_router
@@ -294,6 +297,171 @@ class PriceApiTests(unittest.TestCase):
         from backend.services.price import checkout_url_from_obj
 
         self.assertEqual(doc["checkout_url"], checkout_url_from_obj(doc))
+
+    def test_cluster_reconstruct_when_table_empty(self) -> None:
+        pair = self.etalon["cluster_id"]
+        mcp = open_mcp(self.db_path)
+        try:
+            mcp.conn.execute("DELETE FROM cluster")
+            mcp.conn.commit()
+            row = load_cluster_row(mcp.conn, pair)
+            self.assertEqual(row["id"], pair)
+            hubs = parse_cluster_id_hubs(pair)
+            self.assertGreaterEqual(len(hubs), 2)
+            with self.assertRaises(UnknownCluster):
+                load_cluster_row(mcp.conn, "c:no-such-hub")
+        finally:
+            mcp.close()
+        status, _headers, body = self._price(pair)
+        self.assertEqual(status, 200)
+        events = _parse_sse(body)
+        names = [n for n, _p in events]
+        self.assertEqual(names[0], "resolved")
+        self.assertIn("leg", names)
+        self.assertEqual(names[-1], "done")
+        self.assertEqual(events[-1][1]["cluster_id"], pair)
+        self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+
+    def test_zero_rub_not_treated_as_price(self) -> None:
+        self.assertTrue(price_is_absent(0))
+        self.assertIsNone(pick_priced_offer([{"transport": "etrain", "price": {"amount": 0}}]))
+        self.assertEqual(cache_leg_issue(None), "no_route")
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        mcp = open_mcp(self.db_path)
+        try:
+            def fake(_name: str, args: dict) -> dict:
+                dest = str(args.get("destination") or "")
+                region = ""
+                for row in mcp.conn.execute("SELECT * FROM hub"):
+                    names = [row["name"] or "", row["resolved_name"] or ""]
+                    if dest in names or any(dest.startswith(n) for n in names if n):
+                        region = row["resolved_region"] or row["expected_region"] or row["subject"]
+                        break
+                body = {
+                    "meta": {"to": {"name": dest or "x", "region": region or "x"}},
+                    "variants": [{"transport": "etrain", "price": {"amount": 0}}],
+                }
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(body, ensure_ascii=True)}]
+                    }
+                }
+
+            mcp.call_tool = fake  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            for leg in legs:
+                self.assertGreater(leg["price"], 0)
+                self.assertEqual(leg["source"], "cache")
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+            codes = [p["code"] for n, p in events if n == "warning"]
+            self.assertIn("cache_fallback", codes)
+            self.assertNotIn("no_price", codes)
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    def test_cache_fallback_when_live_disabled_or_raises(self) -> None:
+        self.assertFalse(live_tutu_enabled())
+        mcp = open_mcp(self.db_path)
+        try:
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            self.assertTrue(all(p["source"] == "cache" for p in legs))
+            codes = [p["code"] for n, p in events if n == "warning"]
+            self.assertNotIn("cache_fallback", codes)
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+        finally:
+            mcp.close()
+
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        mcp = open_mcp(self.db_path)
+        try:
+            def boom(*_a, **_k):
+                raise TimeoutError("tutu timeout")
+
+            mcp.call_tool = boom  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            self.assertTrue(all(p["source"] == "cache" for p in legs))
+            codes = [p["code"] for n, p in events if n == "warning"]
+            self.assertIn("cache_fallback", codes)
+            self.assertEqual(events[-1][1]["price_status"], "fixture-confirmed")
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    def test_live_priced_hop_may_set_status_live(self) -> None:
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        mcp = open_mcp(self.db_path)
+        live_url = "https://www.tutu.ru/live-example?x=1&y=2"
+        try:
+            def fake(_name: str, args: dict) -> dict:
+                dest = str(args.get("destination") or "")
+                region = ""
+                rname = dest or "x"
+                for row in mcp.conn.execute("SELECT * FROM hub"):
+                    names = [row["name"] or "", row["resolved_name"] or ""]
+                    if dest in names or any(dest.startswith(n) for n in names if n):
+                        region = row["resolved_region"] or row["expected_region"] or row["subject"]
+                        rname = row["resolved_name"] or row["name"]
+                        break
+                body = {
+                    "meta": {"to": {"name": rname, "region": region or "x"}},
+                    "variants": [
+                        {
+                            "transport": "railway",
+                            "price": {"amount": 1200},
+                            "duration_min": 180,
+                            "checkout_url": live_url,
+                            "checkout_ref": {"transport": "railway"},
+                        }
+                    ],
+                }
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(body, ensure_ascii=True)}]
+                    }
+                }
+
+            mcp.call_tool = fake  # type: ignore[method-assign]
+            from backend.services.price import iter_price_events
+
+            events = list(iter_price_events(self._price_body(self.etalon["cluster_id"]), mcp))
+            legs = [p for n, p in events if n == "leg"]
+            self.assertTrue(legs)
+            self.assertTrue(any(p["source"] == "live" for p in legs))
+            for leg in legs:
+                self.assertGreater(leg["price"], 0)
+            self.assertEqual(events[-1][1]["price_status"], "live")
+            checkouts = [p for n, p in events if n == "checkout"]
+            self.assertTrue(checkouts)
+            urls = [it["checkout_url"] for it in checkouts[0]["items"]]
+            self.assertIn(live_url, urls)
+        finally:
+            mcp.close()
+            os.environ.pop("BURGER_LIVE_TUTU", None)
+
+    @unittest.skipUnless(
+        (os.environ.get("BURGER_LIVE_NET") or "").strip().lower() in ("1", "true", "yes", "on"),
+        "live tutu network not enabled",
+    )
+    def test_live_tutu_network_optional(self) -> None:
+        os.environ["BURGER_LIVE_TUTU"] = "1"
+        status, _headers, body = self._price(self.etalon["cluster_id"])
+        self.assertEqual(status, 200)
+        events = _parse_sse(body)
+        self.assertEqual(events[0][0], "resolved")
+        self.assertEqual(events[-1][0], "done")
 
 
 if __name__ == "__main__":
