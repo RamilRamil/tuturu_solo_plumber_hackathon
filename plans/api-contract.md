@@ -29,6 +29,7 @@ Invariants:
 - The same hub set at 50 / 100 / 150 km **must** produce the same `cluster_id`.
 - Precompute rows live in `cluster(id, radius_km, ...)` with PK `(id, radius_km)`. Public id is `id` only.
 - `POST /api/price` accepts this id. Unknown id → **404**.
+- `load_cluster_row` reads table `cluster` only. Missing row → **404**. Do not rebuild the cluster from `hub.id` existence.
 - Sharing a result uses this id; a radius change that does not change the hub set does not mint a new id.
 
 Example (etalon #1, two hubs):
@@ -173,7 +174,9 @@ data: <json>
 
 Event names (payload of `data:`): `resolved` | `leg` | `hotel` | `breakdown` | `checkout` | `warning` | `done`.
 
-First `leg` should arrive ~3 s after the request, not after every hop. Date windows are lazy (V3).
+SSE events stay sequential (one event then the next). Blocking MCP/SQLite work runs off the FastAPI event loop. Artificial 3s/1s pauses are opt-in via `BURGER_PRICE_DEMO_PACE=1`. Default live path has no extra sleep on top of MCP latency. Date windows are lazy (V3).
+
+Route cache lookup key is `(origin_hub, dest_hub, requested day, adults, pax_sig)`. Do not substitute `leg.date_probed` as the cache date. Exact miss: live Tutu if `BURGER_LIVE_TUTU`, else last-resort `leg` row with warning `stale_leg` (not mixed with `misresolved` / `not_sellable` / `no_route`). Checkout URL and price share the same date and pax. `search_multitransport` is adults-only: non-empty `children_ages` emits `child_fare_unverified` and still queries adults. `search_hotels` accepts `children_ages`.
 
 ### `resolved`
 
@@ -219,7 +222,7 @@ First `leg` should arrive ~3 s after the request, not after every hop. Date wind
 }
 ```
 
-`source` ∈ `{live, cache}`. Price `0` is absence (drop the mode; do not show 0 RUB as a fare). `checkout_ref` is an opaque object from Tutu; pass through.
+`source` ∈ `{live, cache}`. Optional `stale: true` when the hop used a last-resort `leg` row instead of exact `route_cache` for the requested day. Price `0` is absence (drop the mode; do not show 0 RUB as a fare). `checkout_ref` is an opaque object from Tutu; pass through. Checkout URL and `price`/`date` must come from the same cache or live payload.
 
 If the directed `leg` row is `no_route` or missing, do not invent a composite. Emit `warning` and keep the card (grey).
 
@@ -253,7 +256,7 @@ If the directed `leg` row is `no_route` or missing, do not invent a composite. E
 }
 ```
 
-`price_status`: `fixture-confirmed` until a live Tutu run for **both** etalon #1 and the backup single-hub burger (SC-price). Do not treat fixture totals as SC-price.
+`price_status` ∈ `{fixture-confirmed, live}`. Overall `breakdown`/`done` status stays `fixture-confirmed` unless env `BURGER_SC_PRICE_ACCEPTED` is truthy. That env is the **only** way overall status may become `live`. One live hop (`source: live`) must not flip overall status. Do not treat fixture totals as SC-price. Per-item `source` stays `live|cache`.
 
 ### `checkout`
 
@@ -279,11 +282,14 @@ Reproduce `checkout_url` exactly as returned. Do not rebuild or trim.
   "code": "misresolved",
   "message": "guard rejected destination",
   "hub_id": null,
-  "leg": { "from_hub": "", "to_hub": "" }
+  "leg": { "from_hub": "", "to_hub": "" },
+  "recovered": true
 }
 ```
 
-`code` examples: `misresolved`, `no_route`, `no_hotel`, `hours_unknown`, `cache_fallback`.
+`code` examples (keep distinct): `misresolved`, `not_sellable`, `no_route`, `no_price`, `no_hotel`, `hours_unknown`, `cache_fallback`, `stale_leg`, `child_fare_unverified`.
+
+Optional `recovered: true` on `no_route` when the return hop failed and fallback from the previous city succeeded. The UI must not grey the whole cluster in that case. Omit `recovered` when false.
 
 ### `done`
 
