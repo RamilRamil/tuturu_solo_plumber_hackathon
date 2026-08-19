@@ -1,4 +1,5 @@
-export const ETALON_PAIR_ID =
+export const ETALON_CLUSTER_ID = "c:Углич|Ярославская область";
+export const ALMOST_FITS_PAIR_ID =
   "c:Ростов|Ярославская область,Ярославль|Ярославская область";
 export const BACKUP_YAR_ID = "c:Ярославль|Ярославская область";
 export const ETALON_INGREDIENTS = ["ancient_temple", "industrial_museum"] as const;
