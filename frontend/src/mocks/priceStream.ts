@@ -1,7 +1,8 @@
 import {
+  ALMOST_FITS_PAIR_ID,
   BACKUP_YAR_ID,
   CHECKOUT_URL_ETALON,
-  ETALON_PAIR_ID,
+  ETALON_CLUSTER_ID,
   SUZDAL_ID,
   TORZHOK_ID,
   TVER_ID,
@@ -32,7 +33,59 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-function etalonEvents(req: PriceRequest): SseEvent[] {
+function uglichEvents(req: PriceRequest): SseEvent[] {
+  return [
+    {
+      event: "resolved",
+      data: {
+        origin: {
+          query: req.origin,
+          name: "Москва",
+          region: "Москва",
+          geo_id: null,
+          guard: "ok",
+        },
+        hubs: [
+          {
+            hub_id: "Углич|Ярославская область",
+            query: "Uglich",
+            name: "Углич",
+            region: "Ярославская область",
+            guard: "ok",
+          },
+        ],
+      },
+    },
+    {
+      event: "warning",
+      data: {
+        code: "no_route",
+        message: "Москва → Углич: билета нет",
+        hub_id: "Углич|Ярославская область",
+        leg: { from_hub: "Москва|Москва", to_hub: "Углич|Ярославская область" },
+      },
+    },
+    {
+      event: "warning",
+      data: {
+        code: "not_sellable",
+        message: "Дальше своим ходом",
+        hub_id: "Углич|Ярославская область",
+        leg: { from_hub: "Москва|Москва", to_hub: "Углич|Ярославская область" },
+      },
+    },
+    {
+      event: "done",
+      data: {
+        ok: false,
+        cluster_id: ETALON_CLUSTER_ID,
+        price_status: "fixture-confirmed",
+      },
+    },
+  ];
+}
+
+function pairEvents(req: PriceRequest): SseEvent[] {
   const lodging = req.budget_scope === "all" ? 1750 : 0;
   const transport = 2592;
   const total = req.budget_scope === "all" ? 4342 : transport;
@@ -146,7 +199,7 @@ function etalonEvents(req: PriceRequest): SseEvent[] {
       event: "warning",
       data: {
         code: "hours_unknown",
-        message: "opening_hours tag missing",
+        message: "часы работы неизвестны",
         hub_id: null,
         leg: { from_hub: "", to_hub: "" },
       },
@@ -179,7 +232,7 @@ function etalonEvents(req: PriceRequest): SseEvent[] {
       event: "done",
       data: {
         ok: true,
-        cluster_id: ETALON_PAIR_ID,
+        cluster_id: ALMOST_FITS_PAIR_ID,
         price_status: "fixture-confirmed",
       },
     },
@@ -243,7 +296,7 @@ function backupEvents(req: PriceRequest): SseEvent[] {
       event: "warning",
       data: {
         code: "cache_fallback",
-        message: "mcp_cache at 2026-08-19T13:44:53Z",
+        message: "кэш от 2026-08-19T13:44:53Z",
         hub_id: "Ярославль|Ярославская область",
         leg: { from_hub: "", to_hub: "" },
       },
@@ -338,18 +391,20 @@ export async function emitMockPriceStream(
   signal: AbortSignal,
 ): Promise<void> {
   let events: SseEvent[];
-  if (req.cluster_id === ETALON_PAIR_ID) {
-    events = etalonEvents(req);
+  if (req.cluster_id === ETALON_CLUSTER_ID) {
+    events = uglichEvents(req);
+  } else if (req.cluster_id === ALMOST_FITS_PAIR_ID) {
+    events = pairEvents(req);
   } else if (req.cluster_id === BACKUP_YAR_ID) {
     events = backupEvents(req);
   } else if (req.cluster_id === TORZHOK_ID) {
-    events = warningStream(TORZHOK_ID, "no_route", "leg row no_route");
+    events = warningStream(TORZHOK_ID, "no_route", "До этого города билетов нет");
   } else if (req.cluster_id === VLADIMIR_ID) {
-    events = warningStream(VLADIMIR_ID, "misresolved", "guard rejected destination");
+    events = warningStream(VLADIMIR_ID, "misresolved", "Пункт назначения определён неверно");
   } else if (req.cluster_id === SUZDAL_ID) {
-    events = warningStream(SUZDAL_ID, "not_sellable", "SSE not_sellable after origin");
+    events = warningStream(SUZDAL_ID, "not_sellable", "Дальше своим ходом");
   } else if (req.cluster_id === TVER_ID) {
-    events = warningStream(TVER_ID, "missing_price", "no priced leg", [
+    events = warningStream(TVER_ID, "missing_price", "Цены на плечо нет", [
       {
         event: "leg",
         data: {
