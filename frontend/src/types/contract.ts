@@ -134,6 +134,7 @@ export type WarningEvent = {
   message: string;
   hub_id: string | null;
   leg: { from_hub: string; to_hub: string };
+  recovered?: boolean;
 };
 
 export type DoneEvent = {
@@ -176,10 +177,22 @@ export type CardState = {
   code: RoutingGreyCode | null;
 };
 
+export type CoverageRegionStatus = "loaded" | "failed" | "not_in_snapshot";
+
+export type CoverageRegion = {
+  slug?: string;
+  label: string;
+  status: CoverageRegionStatus;
+};
+
+export type CoverageSource = "api" | "static" | "static-fallback";
+
 export type CoveragePayload = {
   loaded: string[];
   admin_level_4: string[];
+  regions: CoverageRegion[];
   at: string | null;
   note: string | null;
   poi_count?: number;
+  source: CoverageSource;
 };

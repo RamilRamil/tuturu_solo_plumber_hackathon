@@ -1,90 +1,71 @@
 import { useEffect, useState } from "react";
-import type { CoveragePayload } from "../types/contract";
+import { fetchCoverage } from "../api/client";
+import type { ApiMode, CoveragePayload, CoverageRegion } from "../types/contract";
 
 type Props = {
+  mode: ApiMode;
   emptyPlaces: boolean;
   hasIngredients: boolean;
 };
 
-const FALLBACK: CoveragePayload = {
-  loaded: ["Ярославская область"],
-  admin_level_4: [
-    "Владимирская область",
-    "Вологодская область",
-    "Ивановская область",
-    "Костромская область",
-    "Московская область",
-    "Тверская область",
-    "Ярославская область",
-  ],
-  at: "2026-08-19T13:44:53Z",
-  note: "wave1 D3 uses Yaroslavl oblast extract (G7); not russia-latest",
-  poi_count: 2084,
-};
-
-async function loadCoverage(): Promise<CoveragePayload> {
-  const paths = ["/coverage.json", "/mocks/coverage.json"];
-  for (const path of paths) {
-    try {
-      const res = await fetch(path);
-      if (!res.ok) continue;
-      const body = (await res.json()) as Partial<CoveragePayload> & {
-        regions_loaded?: string[];
-      };
-      const loaded = body.loaded ?? body.regions_loaded ?? [];
-      const admin = body.admin_level_4 ?? [];
-      if (loaded.length === 0 && admin.length === 0) continue;
-      return {
-        loaded,
-        admin_level_4: admin,
-        at: body.at ?? null,
-        note: body.note ?? null,
-        poi_count: body.poi_count,
-      };
-    } catch {
-      continue;
-    }
-  }
-  return FALLBACK;
+function regionName(region: CoverageRegion): string {
+  return region.label || region.slug || "";
 }
 
-function isLoadedName(name: string, loaded: string[]): boolean {
-  const n = name.toLowerCase();
-  return loaded.some((item) => {
-    const x = item.toLowerCase();
-    if (n === x) return true;
-    if (n.includes("ярослав") && (x.includes("ярослав") || x.includes("yaroslav"))) {
-      return true;
-    }
-    if (x.includes("ярослав") && n.includes("yaroslav")) return true;
-    return n.includes(x) || x.includes(n);
-  });
+function splitFromRegions(regions: CoverageRegion[]): {
+  loaded: CoverageRegion[];
+  failed: CoverageRegion[];
+  holes: CoverageRegion[];
+} {
+  return {
+    loaded: regions.filter((region) => region.status === "loaded"),
+    failed: regions.filter((region) => region.status === "failed"),
+    holes: regions.filter((region) => region.status === "not_in_snapshot"),
+  };
 }
 
-export function CoverageMap({ emptyPlaces, hasIngredients }: Props) {
+function splitFromLabels(data: CoveragePayload): {
+  loaded: string[];
+  holes: string[];
+} {
+  const loadedSet = new Set(data.loaded);
+  const overlap = data.loaded.some((name) => data.admin_level_4.includes(name));
+  const holes = overlap
+    ? data.admin_level_4.filter((name) => !loadedSet.has(name))
+    : [];
+  return { loaded: data.loaded, holes };
+}
+
+export function CoverageMap({ mode, emptyPlaces, hasIngredients }: Props) {
   const [data, setData] = useState<CoveragePayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    loadCoverage().then((payload) => {
+    setData(null);
+    fetchCoverage(mode).then((payload) => {
       if (!cancelled) setData(payload);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mode]);
 
   if (!data) {
     return (
       <section className="coverage-panel">
         <h2>Покрытие данных</h2>
-        <p className="mute">загрузка coverage.json…</p>
+        <p className="mute">загрузка покрытия…</p>
       </section>
     );
   }
 
-  const holes = data.admin_level_4.filter((name) => !isLoadedName(name, data.loaded));
-  const loadedCount = data.loaded.length;
+  const fromRegions = data.regions.length > 0 ? splitFromRegions(data.regions) : null;
+  const fromLabels = fromRegions ? null : splitFromLabels(data);
+  const loadedCount = fromRegions ? fromRegions.loaded.length : fromLabels?.loaded.length ?? 0;
+  const hasFailed = Boolean(fromRegions && fromRegions.failed.length > 0);
+  const hasHoles = fromRegions
+    ? fromRegions.holes.length > 0
+    : Boolean(fromLabels && fromLabels.holes.length > 0);
 
   return (
     <section className="coverage-panel">
@@ -95,24 +76,47 @@ export function CoverageMap({ emptyPlaces, hasIngredients }: Props) {
       </p>
       <div className="coverage-legend">
         <span className="swatch loaded">залито</span>
-        <span className="swatch hole">дыра ингеста</span>
+        {hasFailed ? <span className="swatch failed">сбой</span> : null}
+        {hasHoles ? <span className="swatch hole">дыра ингеста</span> : null}
       </div>
       <ul className="coverage-list">
-        {data.loaded.map((name) => (
-          <li key={`loaded-${name}`} className="cov-item loaded">
-            {name}
-          </li>
-        ))}
-        {holes.map((name) => (
-          <li key={`hole-${name}`} className="cov-item hole">
-            {name}
-          </li>
-        ))}
+        {fromRegions
+          ? fromRegions.loaded.map((region) => (
+              <li key={`loaded-${region.slug || region.label}`} className="cov-item loaded">
+                {regionName(region)}
+              </li>
+            ))
+          : fromLabels?.loaded.map((name) => (
+              <li key={`loaded-${name}`} className="cov-item loaded">
+                {name}
+              </li>
+            ))}
+        {fromRegions
+          ? fromRegions.failed.map((region) => (
+              <li key={`failed-${region.slug || region.label}`} className="cov-item failed">
+                {regionName(region)}
+              </li>
+            ))
+          : null}
+        {fromRegions
+          ? fromRegions.holes.map((region) => (
+              <li key={`hole-${region.slug || region.label}`} className="cov-item hole">
+                {regionName(region)}
+              </li>
+            ))
+          : fromLabels?.holes.map((name) => (
+              <li key={`hole-${name}`} className="cov-item hole">
+                {name}
+              </li>
+            ))}
       </ul>
       {emptyPlaces && hasIngredients ? (
         <p className="ingest-hole">
           Пустая фаза 1 вне залитых областей — дыра ингеста, не «таких мест нет».
         </p>
+      ) : null}
+      {data.source === "static-fallback" ? (
+        <p className="coverage-note">снимок со статики: /api/coverage недоступен</p>
       ) : null}
       {data.note ? <p className="coverage-note">{data.note}</p> : null}
       {data.at ? <p className="coverage-note">снимок: {data.at}</p> : null}

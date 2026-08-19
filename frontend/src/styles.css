@@ -190,6 +190,7 @@ h2 { font-size: 1.15rem; }
   border-radius: 999px;
 }
 .swatch.loaded, .cov-item.loaded { background: #d7ead6; }
+.swatch.failed, .cov-item.failed { background: #f0d4d4; }
 .swatch.hole, .cov-item.hole {
   background: repeating-linear-gradient(-45deg, #ead9c0, #ead9c0 5px, #f7efe3 5px, #f7efe3 10px);
 }
