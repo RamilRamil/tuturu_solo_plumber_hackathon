@@ -15,7 +15,7 @@ if str(_ROOT) not in sys.path:
 
 from ingest.common import CALL_TIMEOUT_S, DB_DEFAULT, now_iso, query_label
 
-from lib.models import connect, make_hub_id
+from lib.models import make_hub_id, pax_sig
 from lib.tutu_mcp import TutuMcp, price_is_absent
 
 WINDOWS = (
@@ -25,6 +25,7 @@ WINDOWS = (
     date(2026, 10, 23),
 )
 ADULTS = (1, 2)
+PAX_SIG = pax_sig([])
 
 ETALONS = (
     (
@@ -64,9 +65,45 @@ def _stay_total(payload: Any) -> None:
     _ = price_is_absent
 
 
+def _route_exists(
+    mcp: TutuMcp, origin_hub: str, dest_hub: str, day: str, adults: int, sig: str
+) -> bool:
+    row = mcp.conn.execute(
+        """
+        SELECT 1 FROM route_cache
+        WHERE origin_hub = ? AND dest_hub = ? AND date = ? AND adults = ? AND pax_sig = ?
+        """,
+        (origin_hub, dest_hub, day, adults, sig),
+    ).fetchone()
+    return row is not None
+
+
+def _hotel_exists(
+    mcp: TutuMcp,
+    hub_id: str,
+    check_in: str,
+    check_out: str,
+    adults: int,
+    sig: str,
+) -> bool:
+    row = mcp.conn.execute(
+        """
+        SELECT 1 FROM hotel_cache
+        WHERE hub_id = ? AND check_in = ? AND check_out = ? AND adults = ? AND pax_sig = ?
+        """,
+        (hub_id, check_in, check_out, adults, sig),
+    ).fetchone()
+    return row is not None
+
+
 def run_d5(db_path: Path) -> dict[str, Any]:
     mcp = TutuMcp(db_path, timeout_s=CALL_TIMEOUT_S, max_concurrency=4)
     fetched_at = now_iso()
+    attempted = 0
+    succeeded = 0
+    overwritten = 0
+    errors = 0
+    unique_keys: set[tuple[Any, ...]] = set()
     route_n = 0
     hotel_n = 0
     skipped = 0
@@ -92,65 +129,100 @@ def run_d5(db_path: Path) -> dict[str, Any]:
                     dep = outbound if i < 2 else ret
                     origin_q = query_label(a.get("resolved_name"), a["name"])
                     dest_q = query_label(b.get("resolved_name"), b["name"])
-                    payload = mcp.call_tool(
-                        "search_multitransport",
-                        {
-                            "origin": origin_q,
-                            "destination": dest_q,
-                            "departure_date": dep,
-                            "adults": adults,
-                            "page_size": 1,
-                        },
-                    )
-                    mcp.conn.execute(
-                        """
-                        INSERT OR REPLACE INTO route_cache(
-                          origin_hub, dest_hub, date, payload_json, fetched_at
-                        ) VALUES (?, ?, ?, ?, ?)
-                        """,
-                        (
-                            a["id"],
-                            b["id"],
-                            dep,
-                            json.dumps(payload, ensure_ascii=True),
-                            fetched_at,
-                        ),
-                    )
-                    route_n += 1
+                    attempted += 1
+                    try:
+                        payload = mcp.call_tool(
+                            "search_multitransport",
+                            {
+                                "origin": origin_q,
+                                "destination": dest_q,
+                                "departure_date": dep,
+                                "adults": adults,
+                                "page_size": 1,
+                            },
+                        )
+                        key = (a["id"], b["id"], dep, adults, PAX_SIG)
+                        if _route_exists(mcp, a["id"], b["id"], dep, adults, PAX_SIG):
+                            overwritten += 1
+                        mcp.conn.execute(
+                            """
+                            INSERT OR REPLACE INTO route_cache(
+                              origin_hub, dest_hub, date, adults, pax_sig,
+                              payload_json, fetched_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                a["id"],
+                                b["id"],
+                                dep,
+                                adults,
+                                PAX_SIG,
+                                json.dumps(payload, ensure_ascii=True),
+                                fetched_at,
+                            ),
+                        )
+                        unique_keys.add(("route",) + key)
+                        succeeded += 1
+                        route_n += 1
+                    except Exception:
+                        errors += 1
                 for stay_hub, check_in, check_out in (
                     (hubs[1], outbound, (start + timedelta(days=1)).isoformat()),
                     (hubs[2], (start + timedelta(days=1)).isoformat(), ret),
                 ):
                     city_q = query_label(stay_hub.get("resolved_name"), stay_hub["name"])
-                    payload = mcp.call_tool(
-                        "search_hotels",
-                        {
-                            "city_name": city_q,
-                            "check_in": check_in,
-                            "check_out": check_out,
-                            "adults": adults,
-                        },
-                    )
-                    _stay_total(payload)
-                    mcp.conn.execute(
-                        """
-                        INSERT OR REPLACE INTO hotel_cache(
-                          hub_id, check_in, check_out, adults, payload_json, fetched_at
-                        ) VALUES (?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            stay_hub["id"],
-                            check_in,
-                            check_out,
-                            adults,
-                            json.dumps(payload, ensure_ascii=True),
-                            fetched_at,
-                        ),
-                    )
-                    hotel_n += 1
+                    attempted += 1
+                    try:
+                        payload = mcp.call_tool(
+                            "search_hotels",
+                            {
+                                "city_name": city_q,
+                                "check_in": check_in,
+                                "check_out": check_out,
+                                "adults": adults,
+                            },
+                        )
+                        _stay_total(payload)
+                        key = (stay_hub["id"], check_in, check_out, adults, PAX_SIG)
+                        if _hotel_exists(
+                            mcp, stay_hub["id"], check_in, check_out, adults, PAX_SIG
+                        ):
+                            overwritten += 1
+                        mcp.conn.execute(
+                            """
+                            INSERT OR REPLACE INTO hotel_cache(
+                              hub_id, check_in, check_out, adults, pax_sig,
+                              payload_json, fetched_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                stay_hub["id"],
+                                check_in,
+                                check_out,
+                                adults,
+                                PAX_SIG,
+                                json.dumps(payload, ensure_ascii=True),
+                                fetched_at,
+                            ),
+                        )
+                        unique_keys.add(("hotel",) + key)
+                        succeeded += 1
+                        hotel_n += 1
+                    except Exception:
+                        errors += 1
                 mcp.conn.commit()
     mcp.close()
-    return {"route_cache": route_n, "hotel_cache": hotel_n, "skipped_etalons": skipped, "at": fetched_at}
+    return {
+        "attempted": attempted,
+        "succeeded": succeeded,
+        "unique_rows": len(unique_keys),
+        "overwritten": overwritten,
+        "errors": errors,
+        "route_cache": route_n,
+        "hotel_cache": hotel_n,
+        "skipped_etalons": skipped,
+        "at": fetched_at,
+    }
 
 
 def main() -> int:
