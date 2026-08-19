@@ -1,0 +1,20 @@
+{
+  "classes": [
+    "Q16970",
+    "Q44613"
+  ],
+  "ingredient": "ancient_temple",
+  "bbox": [
+    56.5,
+    59.2,
+    37.2,
+    41.6
+  ],
+  "wikidata_rows": 0,
+  "matched_tag": 0,
+  "matched_coord": 0,
+  "inception_filled": 0,
+  "poi_scanned": 791,
+  "at": "2026-08-19T15:27:07Z",
+  "db": "/Users/ramilmustafin/Projects/tuturu_hackaton/data/burger.db"
+}
