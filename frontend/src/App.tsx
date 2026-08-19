@@ -6,6 +6,7 @@ import { CoverageMap } from "./components/CoverageMap";
 import { IngredientMenu } from "./components/IngredientMenu";
 import { ModeToggle } from "./components/ModeToggle";
 import { OriginForm } from "./components/OriginForm";
+import { PlaceDetails } from "./components/PlaceDetails";
 import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
@@ -183,7 +184,6 @@ export function App() {
     }
     let cancelled = false;
     setPlacesLoading(true);
-    setSelectedId(null);
     fetchPlaces(mode, {
       ingredients: selectedIngredients,
       radius_km: radiusKm,
@@ -199,7 +199,14 @@ export function App() {
         setAborted(false);
         const ids = new Set(res.places.map((place) => place.cluster_id));
         const wanted = wantedClusterRef.current;
-        setSelectedId(wanted && ids.has(wanted) ? wanted : null);
+        if (wanted && ids.has(wanted)) {
+          setSelectedId(wanted);
+          return;
+        }
+        const firstFull = res.places.find((place) => place.coverage.missing.length === 0);
+        const pick = firstFull ?? res.places[0];
+        setSelectedId(pick ? pick.cluster_id : null);
+        if (pick) wantedClusterRef.current = pick.cluster_id;
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -331,8 +338,7 @@ export function App() {
     Boolean(shareClusterRef.current) &&
     !placesLoading &&
     places.length > 0 &&
-    !places.some((place) => place.cluster_id === shareClusterRef.current) &&
-    selectedPlace === null;
+    !places.some((place) => place.cluster_id === shareClusterRef.current);
 
   return (
     <div className="app">
@@ -394,7 +400,7 @@ export function App() {
             </div>
           ) : null}
 
-          <div className="stage">
+          <div className={selectedPlace ? "stage has-selection" : "stage"}>
             <PlaceList
               places={fullPlaces}
               selectedId={selectedId}
@@ -403,7 +409,39 @@ export function App() {
               hasIngredients={selectedIngredients.length > 0}
               onSelect={handleSelect}
             />
-            <ClusterMap place={selectedPlace} />
+            <div className="stage-mid">
+              <ClusterMap place={selectedPlace} />
+              <PlaceDetails place={selectedPlace} />
+            </div>
+            {selectedPlace ? (
+              <div className="stage-price">
+                <OriginForm
+                  enabled
+                  origin={origin}
+                  days={days}
+                  month={month}
+                  adults={adults}
+                  childrenAges={childrenAges}
+                  budgetScope={budgetScope}
+                  busy={streaming}
+                  onAbort={abortPrice}
+                  onOrigin={setOrigin}
+                  onDays={setDays}
+                  onMonth={setMonth}
+                  onAdults={setAdults}
+                  onChildrenAges={setChildrenAges}
+                  onBudgetScope={setBudgetScope}
+                  onSubmit={startPrice}
+                />
+                <PriceStream
+                  events={sseEvents}
+                  error={sseError}
+                  streaming={streaming}
+                  aborted={aborted}
+                  onRetry={startPrice}
+                />
+              </div>
+            ) : null}
           </div>
 
           <AlmostFits
@@ -411,32 +449,6 @@ export function App() {
             selectedId={selectedId}
             cardState={cardState}
             onSelect={handleSelect}
-          />
-
-          <OriginForm
-            enabled={selectedPlace != null}
-            origin={origin}
-            days={days}
-            month={month}
-            adults={adults}
-            childrenAges={childrenAges}
-            budgetScope={budgetScope}
-            busy={streaming}
-            onAbort={abortPrice}
-            onOrigin={setOrigin}
-            onDays={setDays}
-            onMonth={setMonth}
-            onAdults={setAdults}
-            onChildrenAges={setChildrenAges}
-            onBudgetScope={setBudgetScope}
-            onSubmit={startPrice}
-          />
-          <PriceStream
-            events={sseEvents}
-            error={sseError}
-            streaming={streaming}
-            aborted={aborted}
-            onRetry={startPrice}
           />
         </main>
       </div>

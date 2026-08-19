@@ -32,6 +32,8 @@ function sourceMark(source: "live" | "cache"): string {
   return source === "cache" ? "cache" : "live";
 }
 
+const NO_TICKET_CODES = new Set(["no_route", "not_sellable", "missing_price", "no_price"]);
+
 export function PriceStream({ events, error, streaming, aborted, onRetry }: Props) {
   const breakdown = events.find((item) => item.event === "breakdown") as
     | { event: "breakdown"; data: BreakdownEvent }
@@ -40,6 +42,12 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
     | { event: "checkout"; data: CheckoutEvent }
     | undefined;
   const done = events.find((item) => item.event === "done");
+  const legs = events.filter(
+    (item): item is Extract<SseEvent, { event: "leg" }> => item.event === "leg",
+  );
+  const hotels = events.filter(
+    (item): item is Extract<SseEvent, { event: "hotel" }> => item.event === "hotel",
+  );
   const cacheFallback = events.find(
     (item) => item.event === "warning" && item.data.code === "cache_fallback",
   );
@@ -48,19 +56,18 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       (item.event === "leg" || item.event === "hotel") && item.data.source === "cache",
   );
   const is404 = error === "404 unknown cluster_id";
-  const hasPricedLeg = events.some(
-    (item) => item.event === "leg" && item.data.price > 0,
+  const checkoutItems = checkout?.data.items.filter((item) => item.checkout_url) ?? [];
+  const blockingWarning = events.some(
+    (item) => item.event === "warning" && NO_TICKET_CODES.has(item.data.code),
   );
-  const onFootIncomplete = events.some(
-    (item) =>
-      item.event === "warning" &&
-      (item.data.code === "no_route" || item.data.code === "not_sellable"),
-  ) && !hasPricedLeg;
+  const noTicket =
+    checkoutItems.length === 0 &&
+    !streaming &&
+    (Boolean(done) || blockingWarning);
 
   return (
     <section className="price-stream">
-      <h2>Поток цен</h2>
-      {streaming ? <p className="loading-line">события SSE по мере прихода…</p> : null}
+      <h2>Цена</h2>
       {aborted ? <p className="hint">поток прерван</p> : null}
       {is404 ? (
         <div className="not-found">
@@ -78,34 +85,43 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
           </button>
         </p>
       ) : null}
-      <ol>
-        {events.map((item, index) => (
-          <li key={`${item.event}-${index}`} className="sse-item">
-            <strong>{item.event}</strong>
-            {item.event === "resolved" ? ` город выезда ${item.data.origin.name}` : null}
-            {item.event === "leg" ? (
-              <>
-                {" "}
-                {formatLeg(item.data)}{" "}
-                <span className={`src src-${item.data.source}`}>
-                  {sourceMark(item.data.source)}
-                </span>
-              </>
-            ) : null}
-            {item.event === "hotel" ? (
-              <>
-                {" "}
-                {formatHotel(item.data)}{" "}
-                <span className={`src src-${item.data.source}`}>
-                  {sourceMark(item.data.source)}
-                </span>
-              </>
-            ) : null}
-            {item.event === "warning" ? ` ${item.data.message}` : null}
-            {item.event === "done" ? (item.data.ok ? " готово" : " без билета") : null}
-          </li>
-        ))}
-      </ol>
+      {events.length === 0 && !streaming && !error ? (
+        <p className="hint">После запроса цены появятся здесь.</p>
+      ) : null}
+      {breakdown ? (
+        <div className="price-summary">
+          <p className="price-total">
+            {breakdown.data.total} {breakdown.data.currency}
+          </p>
+          <p>транспорт: {breakdown.data.transport} {breakdown.data.currency}</p>
+          <p>жильё: {breakdown.data.lodging} {breakdown.data.currency}</p>
+          <p className="price-status">{breakdown.data.price_status}</p>
+        </div>
+      ) : null}
+      {legs.length > 0 ? (
+        <ul className="price-legs">
+          {legs.map((item, index) => (
+            <li key={`leg-${index}`}>
+              {formatLeg(item.data)}{" "}
+              <span className={`src src-${item.data.source}`}>
+                {sourceMark(item.data.source)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {hotels.length > 0 ? (
+        <ul className="price-hotels">
+          {hotels.map((item, index) => (
+            <li key={`hotel-${index}`}>
+              {formatHotel(item.data)}{" "}
+              <span className={`src src-${item.data.source}`}>
+                {sourceMark(item.data.source)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {hasCacheSource || cacheFallback ? (
         <p className="cache-stamp">
           источник: cache
@@ -117,34 +133,46 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       ) : events.some((item) => item.event === "leg") ? (
         <p className="cache-stamp">источник плеч: live</p>
       ) : null}
-      {breakdown ? (
-        <div className="breakdown">
-          <p>транспорт: {breakdown.data.transport} {breakdown.data.currency}</p>
-          <p>жильё: {breakdown.data.lodging} {breakdown.data.currency}</p>
-          <p>итого: {breakdown.data.total} {breakdown.data.currency}</p>
-          <p className="price-status">{breakdown.data.price_status}</p>
-        </div>
-      ) : done && onFootIncomplete ? (
-        <p>
-          До места билета нет - транспортную сумму показать не из чего. Дальше
-          своим ходом.
-        </p>
-      ) : done ? (
-        <p>Поток завершён без раскладки - итог не готов.</p>
+      <div className="buy-cta">
+        {checkoutItems.length > 0
+          ? checkoutItems.map((item, index) => (
+              <a
+                key={`${index}-${item.checkout_url}`}
+                className="checkout buy"
+                href={item.checkout_url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Купить на Tutu
+              </a>
+            ))
+          : streaming
+            ? (
+                <p className="buy-pending">считаем маршрут…</p>
+              )
+            : noTicket
+              ? (
+                  <p className="buy-none">до этого места билета нет</p>
+                )
+              : null}
+      </div>
+      {events.length > 0 ? (
+        <details className="sse-details">
+          <summary>подробности</summary>
+          <ol>
+            {events.map((item, index) => (
+              <li key={`${item.event}-${index}`} className="sse-item">
+                <strong>{item.event}</strong>
+                {item.event === "resolved" ? ` город выезда ${item.data.origin.name}` : null}
+                {item.event === "leg" ? ` ${formatLeg(item.data)}` : null}
+                {item.event === "hotel" ? ` ${formatHotel(item.data)}` : null}
+                {item.event === "warning" ? ` ${item.data.message}` : null}
+                {item.event === "done" ? (item.data.ok ? " готово" : " без билета") : null}
+              </li>
+            ))}
+          </ol>
+        </details>
       ) : null}
-      {checkout
-        ? checkout.data.items.map((item, index) => (
-            <a
-              key={`${index}-${item.checkout_url}`}
-              className="checkout"
-              href={item.checkout_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Оформить
-            </a>
-          ))
-        : null}
     </section>
   );
 }
