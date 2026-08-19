@@ -1,0 +1,61 @@
+{
+  "attempted": 48,
+  "succeeded": 48,
+  "unique_rows": 48,
+  "overwritten": 0,
+  "errors": 0,
+  "empty_skipped": 0,
+  "empty_labels_first_pass_false_positive": {
+    "hotel_uglich": 8,
+    "hotel_yaroslavl": 8,
+    "note": "hotels[0] had no min_price field; stay_total lived on best_offer.price; payloads were stored; later rewritten"
+  },
+  "route_cache_written": 32,
+  "hotel_cache_written": 16,
+  "route_cache": 32,
+  "hotel_cache": 16,
+  "min_price_filled_from_warmup": 1,
+  "min_price_filled_ok_legs": {
+    "Moscow->Yaroslavl": 1035,
+    "Yaroslavl->Rostov": 659,
+    "Rostov->Yaroslavl": 659
+  },
+  "ok_legs_priced": 3,
+  "ok_legs_still_null": 236,
+  "hotel_min_stay_total": {
+    "Uglich|Yaroslavskaya oblast": 689,
+    "Yaroslavl|Yaroslavskaya oblast": 750
+  },
+  "moscow_uglich_live": {
+    "expected": "empty / no_route",
+    "got": "railway variants with live prices (not invented)",
+    "sample_min_price": 1341.2,
+    "leg_status_left": "no_route",
+    "leg_min_price_left": null
+  },
+  "by_label": {
+    "hotel_uglich": 8,
+    "hotel_yaroslavl": 8,
+    "moscow_uglich": 8,
+    "moscow_yaroslavl": 8,
+    "yaroslavl_moscow": 8,
+    "uglich_moscow": 8
+  },
+  "error_rows": [],
+  "windows": [
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-10-23"
+  ],
+  "adults": [1, 2],
+  "pax_sig": "",
+  "workers": 4,
+  "db": "/Users/ramilmustafin/Projects/tuturu_hackaton/data/burger.db",
+  "db_bytes": 5382144,
+  "backup_same_as_moscow_yaroslavl": true,
+  "book_pay_order": false,
+  "tools": ["search_multitransport", "search_hotels"],
+  "at": "2026-08-19T15:23:51Z",
+  "hotel_norm_at": "2026-08-19T15:26:00Z"
+}
