@@ -6,6 +6,8 @@ before INSERT.
 
 **Provenance:** Worker A dumped live G5 JSON under `fixtures/raw/` (host `local-mac-not-vps`, 2026-08-19).
 `rows/mcp_cache.json` stores those envelopes as `lib/tutu_mcp.py` would write `mcp_cache`.
+Etalon v2 (live shape): Yaroslavl has **no** `industrial_museum`. The only live industrial_museum is Uglich "Syr Kult Prosvet". Pair Yaroslavl+Rostov is coverage 1/2 (almost-fits). Do not re-add factory POIs.
+
 Etalon total 4342 RUB remains **fixture-confirmed** (field-test §8), **not** SC-price.
 G3 node (Borisoglebsky) has no live Tutu dump; marked fixture-confirmed.
 
@@ -24,5 +26,5 @@ Drop additional raw files here; Architect can refresh `mcp_cache` without changi
 | `rows/clusters.json` | etalon #1 + backup single-hub (B4) |
 | `rows/mcp_cache.json` | mcp_cache as the lib writes it |
 | `rows/misresolve_log.json` | B1 samples |
-| `etalon_1.json` | bundle for B/C/D; price_status=fixture-confirmed |
+| `etalon_1.json` | etalon v2 Uglich on-foot bundle; price_status=fixture-confirmed |
 | `backup_single_hub.json` | B4 backup burger |

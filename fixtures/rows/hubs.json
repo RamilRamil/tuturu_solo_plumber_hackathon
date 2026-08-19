@@ -169,5 +169,24 @@
     "min_price_from_moscow": null,
     "latency_ms": null,
     "checked_at": "2026-08-19T00:00:00Z"
+  },
+  {
+    "id": "Углич|Ярославская область",
+    "name": "Углич",
+    "subject": "Ярославская область",
+    "lat": 57.53333,
+    "lon": 38.33333,
+    "population": 32719,
+    "tutu_geo_id": "2686138",
+    "resolved_name": "Углич",
+    "resolved_region": "Ярославская область",
+    "probe_status": "not_sellable",
+    "sellable_modes": "",
+    "reachable_from_any": 0,
+    "expected_region": "Ярославская область",
+    "expected_region_source": "cities_ru.subject",
+    "min_price_from_moscow": null,
+    "latency_ms": 1,
+    "checked_at": "2026-08-19T13:33:47Z"
   }
 ]

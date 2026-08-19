@@ -64,5 +64,16 @@
     "latency_ms": 800,
     "checked_at": "2026-08-19T00:00:00Z",
     "status": "no_route"
+  },
+  {
+    "origin_hub": "Москва|Москва",
+    "dest_hub": "Углич|Ярославская область",
+    "date_probed": "2026-09-09",
+    "modes": "",
+    "min_price": null,
+    "duration_min": null,
+    "latency_ms": 1,
+    "checked_at": "2026-08-19T13:33:47Z",
+    "status": "no_route"
   }
 ]

@@ -7,7 +7,7 @@
     "center_lat": 57.4,
     "center_lon": 39.63,
     "diameter_km": 58,
-    "ingredient_mask": "ancient_temple,industrial_museum"
+    "ingredient_mask": "ancient_temple"
   },
   {
     "id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
@@ -17,7 +17,7 @@
     "center_lat": 57.4,
     "center_lon": 39.63,
     "diameter_km": 58,
-    "ingredient_mask": "ancient_temple,industrial_museum"
+    "ingredient_mask": "ancient_temple"
   },
   {
     "id": "c:Ростов|Ярославская область,Ярославль|Ярославская область",
@@ -27,7 +27,7 @@
     "center_lat": 57.4,
     "center_lon": 39.63,
     "diameter_km": 58,
-    "ingredient_mask": "ancient_temple,industrial_museum"
+    "ingredient_mask": "ancient_temple"
   },
   {
     "id": "c:Ярославль|Ярославская область",
@@ -58,5 +58,35 @@
     "center_lon": 39.85,
     "diameter_km": 12,
     "ingredient_mask": "ancient_temple,ruins"
+  },
+  {
+    "id": "c:Углич|Ярославская область",
+    "radius_km": 50,
+    "hub_ids": "[\"Углич|Ярославская область\"]",
+    "title": "Углич",
+    "center_lat": 57.53333,
+    "center_lon": 38.33333,
+    "diameter_km": 8,
+    "ingredient_mask": "ancient_temple,industrial_museum"
+  },
+  {
+    "id": "c:Углич|Ярославская область",
+    "radius_km": 100,
+    "hub_ids": "[\"Углич|Ярославская область\"]",
+    "title": "Углич",
+    "center_lat": 57.53333,
+    "center_lon": 38.33333,
+    "diameter_km": 8,
+    "ingredient_mask": "ancient_temple,industrial_museum"
+  },
+  {
+    "id": "c:Углич|Ярославская область",
+    "radius_km": 150,
+    "hub_ids": "[\"Углич|Ярославская область\"]",
+    "title": "Углич",
+    "center_lat": 57.53333,
+    "center_lon": 38.33333,
+    "diameter_km": 8,
+    "ingredient_mask": "ancient_temple,industrial_museum"
   }
 ]
