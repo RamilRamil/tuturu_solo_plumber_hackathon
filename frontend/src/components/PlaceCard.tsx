@@ -1,5 +1,5 @@
 import { INGREDIENT_NAME_RU } from "../catalog/ingredients";
-import { formatKm } from "../format";
+import { formatKm, routingLabel } from "../format";
 import { ETALON_CLUSTER_ID } from "../ids";
 import type { CardState, Place } from "../types/contract";
 
@@ -12,15 +12,6 @@ type Props = {
 
 function ingredientLabel(id: string): string {
   return INGREDIENT_NAME_RU[id] ?? id;
-}
-
-function routingLabel(code: CardState["code"], reason: string | null): string {
-  if (reason) return reason;
-  if (code === "no_route") return "Билета по этому плечу нет";
-  if (code === "misresolved") return "Город определён неверно";
-  if (code === "not_sellable") return "Дальше своим ходом";
-  if (code === "missing_price") return "Цены на плечо нет";
-  return "";
 }
 
 export function PlaceCard({ place, selected, state, onSelect }: Props) {

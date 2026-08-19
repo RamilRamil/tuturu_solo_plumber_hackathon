@@ -1,4 +1,4 @@
-import { formatMoney } from "../format";
+import { formatMoney, humanizeWarning, noRouteRecovered } from "../format";
 import type {
   BreakdownEvent,
   CheckoutEvent,
@@ -15,6 +15,13 @@ type Props = {
   onRetry: () => void;
 };
 
+type DetailRow = {
+  event: string;
+  text: string;
+  dedupKey: string;
+  count: number;
+};
+
 function formatLeg(leg: LegEvent): string {
   if (leg.price === 0) {
     return `${leg.from_name} → ${leg.to_name}: нет тарифа`;
@@ -29,8 +36,72 @@ function formatHotel(hotel: HotelEvent): string {
   return `${hotel.city}: ${formatMoney(hotel.min_price)} ${hotel.currency} за пребывание, не за ночь (${hotel.nights} ноч.)`;
 }
 
+function formatBreakdown(data: BreakdownEvent): string {
+  return `${formatMoney(data.total)} ${data.currency} (транспорт ${formatMoney(data.transport)}, жильё ${formatMoney(data.lodging)})`;
+}
+
 function sourceMark(source: "live" | "cache"): string {
   return source === "cache" ? "cache" : "live";
+}
+
+function warningDedupKey(item: Extract<SseEvent, { event: "warning" }>, text: string): string {
+  const from = item.data.leg?.from_hub ?? "";
+  const to = item.data.leg?.to_hub ?? "";
+  return `${item.data.code}|${from}|${to}|${text}`;
+}
+
+function shouldHideWarning(
+  item: Extract<SseEvent, { event: "warning" }>,
+  events: SseEvent[],
+): boolean {
+  if (item.data.recovered === true) return true;
+  if (item.data.code !== "no_route" && item.data.code !== "stale_leg") return false;
+  if (!noRouteRecovered(item, events)) return false;
+  if (item.data.code === "stale_leg") {
+    const fromHub = item.data.leg?.from_hub ?? "";
+    const toHub = item.data.leg?.to_hub ?? "";
+    const idx = events.indexOf(item);
+    for (let i = idx + 1; i < events.length; i += 1) {
+      const later = events[i];
+      if (later.event !== "leg" || later.data.price <= 0) continue;
+      if (later.data.from_hub === fromHub && later.data.to_hub === toHub) {
+        return false;
+      }
+      return true;
+    }
+  }
+  return true;
+}
+
+function visibleDetailRows(events: SseEvent[]): DetailRow[] {
+  const rows: DetailRow[] = [];
+  for (const item of events) {
+    if (item.event === "warning") {
+      if (shouldHideWarning(item, events)) continue;
+      const { code, message } = item.data;
+      const text = humanizeWarning(code, message);
+      const dedupKey = warningDedupKey(item, text);
+      const prev = rows[rows.length - 1];
+      if (
+        prev &&
+        prev.event === "warning" &&
+        (prev.dedupKey === dedupKey || prev.text === text)
+      ) {
+        prev.count += 1;
+        continue;
+      }
+      rows.push({ event: "warning", text, dedupKey, count: 1 });
+      continue;
+    }
+    let text = "";
+    if (item.event === "resolved") text = `город выезда ${item.data.origin.name}`;
+    else if (item.event === "leg") text = formatLeg(item.data);
+    else if (item.event === "hotel") text = formatHotel(item.data);
+    else if (item.event === "breakdown") text = formatBreakdown(item.data);
+    else if (item.event === "done") text = item.data.ok ? "готово" : "без билета";
+    rows.push({ event: item.event, text, dedupKey: "", count: 1 });
+  }
+  return rows;
 }
 
 const NO_TICKET_CODES = new Set(["no_route", "not_sellable", "missing_price", "no_price"]);
@@ -65,6 +136,11 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
     checkoutItems.length === 0 &&
     !streaming &&
     (Boolean(done) || blockingWarning);
+  const detailRows = visibleDetailRows(events);
+  const cacheFallbackText =
+    cacheFallback && cacheFallback.event === "warning"
+      ? humanizeWarning(cacheFallback.data.code, cacheFallback.data.message)
+      : "";
 
   return (
     <section className="price-stream">
@@ -126,9 +202,7 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
       {hasCacheSource || cacheFallback ? (
         <p className="cache-stamp">
           источник: cache
-          {cacheFallback && cacheFallback.event === "warning"
-            ? ` · ${cacheFallback.data.message}`
-            : ""}
+          {cacheFallbackText ? ` · ${cacheFallbackText}` : ""}
           . Это не live без метки.
         </p>
       ) : events.some((item) => item.event === "leg") ? (
@@ -161,14 +235,11 @@ export function PriceStream({ events, error, streaming, aborted, onRetry }: Prop
         <details className="sse-details">
           <summary>подробности</summary>
           <ol>
-            {events.map((item, index) => (
-              <li key={`${item.event}-${index}`} className="sse-item">
-                <strong>{item.event}</strong>
-                {item.event === "resolved" ? ` город выезда ${item.data.origin.name}` : null}
-                {item.event === "leg" ? ` ${formatLeg(item.data)}` : null}
-                {item.event === "hotel" ? ` ${formatHotel(item.data)}` : null}
-                {item.event === "warning" ? ` ${item.data.message}` : null}
-                {item.event === "done" ? (item.data.ok ? " готово" : " без билета") : null}
+            {detailRows.map((row, index) => (
+              <li key={`${row.event}-${index}`} className="sse-item">
+                <strong>{row.event}</strong>
+                {row.text ? ` ${row.text}` : null}
+                {row.count > 1 ? ` x${row.count}` : null}
               </li>
             ))}
           </ol>

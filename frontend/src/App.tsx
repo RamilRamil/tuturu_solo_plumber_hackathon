@@ -10,6 +10,7 @@ import { PlaceDetails } from "./components/PlaceDetails";
 import { PlaceList } from "./components/PlaceList";
 import { PriceStream } from "./components/PriceStream";
 import { RadiusSlider } from "./components/RadiusSlider";
+import { noRouteRecovered } from "./format";
 import { DEFAULT_RADIUS, ETALON_INGREDIENTS } from "./ids";
 import { encodeShare, parseShare, shareHref, type ShareState } from "./share";
 import type {
@@ -43,28 +44,6 @@ function bootShare(): ShareState {
     };
   }
   return parseShare(window.location.search);
-}
-
-function noRouteRecovered(
-  warning: Extract<SseEvent, { event: "warning" }>,
-  events: SseEvent[],
-): boolean {
-  if (warning.data.recovered === true) return true;
-  const idx = events.indexOf(warning);
-  if (idx < 0) return false;
-  const fromHub = warning.data.leg?.from_hub ?? "";
-  const toHub = warning.data.leg?.to_hub ?? "";
-  if (!fromHub && !toHub) return false;
-  for (let i = idx + 1; i < events.length; i += 1) {
-    const item = events[i];
-    if (item.event !== "leg") continue;
-    if (item.data.price <= 0) continue;
-    if (fromHub && toHub && item.data.from_hub === fromHub && item.data.to_hub === toHub) {
-      return true;
-    }
-    if (toHub && item.data.to_hub === toHub) return true;
-  }
-  return false;
 }
 
 function routingGreyFromEvents(events: SseEvent[]): CardState {

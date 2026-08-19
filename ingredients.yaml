@@ -85,22 +85,6 @@ ingredients:
 
   # ---------- industry ----------
 
-  - id: industrial_site
-    name_ru: Действующие заводы
-    group: industry
-    osm:
-      - man_made=works
-    density_measured: 59
-    density_label: medium
-    require_name: true
-    disclaimer: "доступ не проверен"
-    notes: >
-      ВНИМАНИЕ. Это НЕ туристические объекты. Реальные названия в выдаче:
-      «ООО Цвет и Стиль», «НПК Протэкт», «Мышкинская птицефабрика».
-      21 из 59 объектов вообще без названия — безымянные отбрасывать
-      (require_name). Тег о возможности экскурсии в OSM отсутствует
-      как класс, поэтому дисклеймер обязателен в карточке.
-
   - id: industrial_museum
     name_ru: Музеи техники и промышленности
     group: industry
@@ -345,7 +329,6 @@ parsing_rules:
     coverage: 0.83
     rule: >
       Объекты без name показываем на карте, но не в тексте карточки.
-      Исключение — industrial_site, где безымянные отбрасываются полностью.
 
   start_date:
     coverage: 0.17          # 0.26 для церквей
