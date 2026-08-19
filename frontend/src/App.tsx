@@ -329,7 +329,15 @@ export function App() {
 
       <div className="layout">
         <aside className="rail">
-          <IngredientMenu selected={selectedIngredients} onToggle={toggleIngredient} />
+          <IngredientMenu
+            selected={selectedIngredients}
+            onToggle={toggleIngredient}
+            radiusKm={radiusKm}
+            onParsed={(ingredients, parsedRadius) => {
+              setSelectedIngredients(ingredients);
+              if (parsedRadius) setRadiusKm(parsedRadius);
+            }}
+          />
           <RadiusSlider
             value={radiusKm}
             totalFound={placesRes?.total_found ?? null}

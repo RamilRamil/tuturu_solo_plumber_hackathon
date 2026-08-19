@@ -15,9 +15,10 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
-from backend.routers import places, price
+from backend.routers import parse, places, price
 
 app = FastAPI(title="burger-backend", version="0.0.1")
+app.include_router(parse.router)
 app.include_router(places.router)
 app.include_router(price.router)
 SMOKE_PAUSE_S = 1.0

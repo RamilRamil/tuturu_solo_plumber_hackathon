@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { fetchParse } from "../api/client";
 import { GROUPS, GROUP_NAME_RU, INGREDIENTS, INGREDIENT_NAME_RU } from "../catalog/ingredients";
-import type { DensityLabel } from "../types/contract";
+import type { DensityLabel, RadiusKm } from "../types/contract";
 
 type Props = {
   selected: string[];
   onToggle: (id: string) => void;
+  radiusKm: RadiusKm;
+  onParsed: (ingredients: string[], radiusKm: RadiusKm | null) => void;
 };
 
 const DENSITY_TEXT: Record<DensityLabel, string> = {
@@ -19,8 +22,16 @@ function densityText(label: DensityLabel | null): string {
   return DENSITY_TEXT[label];
 }
 
-export function IngredientMenu({ selected, onToggle }: Props) {
+function asRadius(raw: number): RadiusKm | null {
+  if (raw === 50 || raw === 100 || raw === 150) return raw;
+  return null;
+}
+
+export function IngredientMenu({ selected, onToggle, radiusKm, onParsed }: Props) {
   const [editing, setEditing] = useState(selected.length === 0);
+  const [phrase, setPhrase] = useState("");
+  const [unmatched, setUnmatched] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (selected.length === 0) setEditing(true);
@@ -30,6 +41,25 @@ export function IngredientMenu({ selected, onToggle }: Props) {
     id,
     name: INGREDIENT_NAME_RU[id] ?? id,
   }));
+
+  const submitPhrase = (event: FormEvent) => {
+    event.preventDefault();
+    const text = phrase.trim();
+    if (!text || busy) return;
+    setBusy(true);
+    setUnmatched([]);
+    fetchParse({ text, radius_km: radiusKm })
+      .then((res) => {
+        if (res.ingredients.length === 0) return;
+        onParsed(res.ingredients, asRadius(res.radius_km));
+        if (res.unmatched.length > 0) setUnmatched(res.unmatched);
+        setPhrase("");
+      })
+      .catch(() => {
+        // silent fallback: chips stay the primary path
+      })
+      .finally(() => setBusy(false));
+  };
 
   return (
     <section className="menu">
@@ -83,10 +113,22 @@ export function IngredientMenu({ selected, onToggle }: Props) {
               </div>
             </div>
           ))}
-          <label className="other-field">
-            Другое
-            <input type="text" disabled placeholder="отключено (нет LLM-матчинга)" />
-          </label>
+          <form onSubmit={submitPhrase}>
+            <label className="other-field">
+              Другое
+              <input
+                type="text"
+                value={phrase}
+                disabled={busy}
+                autoComplete="off"
+                placeholder="например: храмы и музеи недалеко"
+                onChange={(event) => setPhrase(event.target.value)}
+              />
+            </label>
+            {unmatched.length > 0 ? (
+              <p className="other-field">не распознали: {unmatched.join(", ")}</p>
+            ) : null}
+          </form>
         </>
       )}
     </section>

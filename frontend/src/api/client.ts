@@ -7,6 +7,7 @@ import type {
   PlacesRequest,
   PlacesResponse,
   PriceRequest,
+  RadiusKm,
   SseEvent,
 } from "../types/contract";
 
@@ -133,6 +134,32 @@ export async function fetchPlaces(req: PlacesRequest): Promise<PlacesResponse> {
     throw new Error(`places failed: ${res.status}`);
   }
   return (await res.json()) as PlacesResponse;
+}
+
+export type ParseRequest = {
+  text: string;
+  radius_km?: RadiusKm;
+};
+
+export type ParseResponse = {
+  ingredients: string[];
+  radius_km: number;
+  unmatched: string[];
+};
+
+const PARSE_TIMEOUT_MS = 6000;
+
+export async function fetchParse(req: ParseRequest): Promise<ParseResponse> {
+  const res = await fetch("/api/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+    signal: AbortSignal.timeout(PARSE_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    throw new Error(`parse failed: ${res.status}`);
+  }
+  return (await res.json()) as ParseResponse;
 }
 
 export async function streamPrice(
